@@ -1,0 +1,250 @@
+---
+title: "Forecasting the 2024 US Presidential Election"
+subtitle: "My subtitle if needed"
+author: 
+  - Tina Kim
+  - David Flores
+  - Kevin Shao
+thanks: "Code and data are available at: https://github.com/DavidFJ207/USPresidentialForecast"
+date: today
+date-format: long
+abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+format: pdf
+number-sections: true
+bibliography: references.bib
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(palmerpenguins)
+```
+
+
+# Introduction
+
+*Overview paragraph:* Provide a brief overview of the context of the upcoming US presidential election and the importance of forecasting its results.
+
+*Estimand paragraph:* Define the estimand clearly (e.g., predicting the probability of a candidate winning the election based on poll data).
+
+*Results paragraph:* Summarize the key findings of the model, highlighting its predictive accuracy and implications.
+
+*Why it matters paragraph:* Explain the broader significance of accurately forecasting election results for politics, society, and policymaking.
+
+*Telegraphing paragraph:* 
+The remainder of this paper is structured as follows: Section 2 details the data and measurement process; Section 3 covers model development and results; Section 4 discusses implications and future steps.
+The remainder of this paper is structured as follows. @sec-data....
+
+# Data {#sec-data}
+
+## Overview
+We use the statistical programming language R [@citeR] and utilize the "Presidential general election polls" dataset [@source]. 
+
+*Person A:* Provide an overview of the dataset's context, sources, and key variables.
+
+## Measurement
+Describe how the real-world phenomenon (voter preference) is translated into a dataset entry.
+
+*Person A:* Discuss the survey design, the process of data collection, and potential biases or errors in measurement.
+
+## Outcome variables
+Add graphs, tables, and text for each outcome variable. Use subsections as needed.
+
+
+Some of our data is (@fig-outcome), from @source
+
+```{r}
+#| label: fig-outcome
+#| fig-cap: Example Outcome Variable Visualization
+#| echo: false
+# Visualization code
+
+```
+
+Talk more about it.
+
+And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+
+```{r}
+#| label: fig-planes
+#| fig-cap: Relationship between wing length and width
+#| echo: false
+#| warning: false
+#| message: false
+
+analysis_data <- read_csv(here::here("data/02-analysis_data/analysis_data.csv"))
+
+analysis_data |> 
+  ggplot(aes(x = width, y = length)) +
+  geom_point(alpha = 0.8) +
+  theme_minimal() +
+  labs(x = "Wing width (mm)",
+       y = "Wing length (mm)")
+```
+
+Talk way more about it. 
+
+## Predictor variables
+Add graphs, tables, and text to describe key predictors.
+
+*Person A:*: Visualize variable distributions (e.g., histograms, boxplots), and justify the inclusion of predictors in the model.
+
+```{r}
+#| label: fig-predictors
+#| fig-cap: Example Predictor Variable Visualization
+#| echo: false
+# Visualization code
+
+```
+
+# Pollster Methodology Overview (Appendix A)
+Append a detailed review of a chosen pollster's methodology, survey techniques, strengths, and weaknesses.
+
+# Model {#sec-model}
+
+## Model Development
+The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election.
+
+*Person B:* Choose a linear or generalized linear model. Justify the selection based on your research goal and data structure.
+
+## Model Set-up
+Define the model mathematically and contextually (e.g., linear model predicting vote share).
+
+\begin{align} 
+y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
+\mu_i &= \alpha + \beta_i x_i \\
+\alpha &\sim \mbox{Normal}(0, 2.5) \\
+\beta &\sim \mbox{Normal}(0, 2.5) \\
+\sigma &\sim \mbox{Exponential}(1)
+\end{align}
+
+We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+
+
+*Person B*: Define all model components and assumptions.
+
+## Model Justification
+Our results are summarized in @tbl-modelresults. Discuss the implications of the findings and their predictive accuracy.
+
+
+# Results
+
+Our results are summarized in @tbl-modelresults.
+
+```{r}
+#| label: tbl-modelresults
+#| tbl-cap: "Forecasting model results based on poll data"
+#| echo: false
+
+# Display results of the model
+```
+*Person B*: Visualize the model's results and include any performance metrics (e.g., RMSE, test/train split).
+```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-modelresults
+#| tbl-cap: ""
+#| warning: false
+
+```
+
+
+# Discussion
+
+## First discussion point {#sec-first-point}
+
+If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+
+## Second discussion point
+
+Please don't use these as sub-heading labels - change them to be what your point actually is.
+
+## Third discussion point
+
+Discuss what the model reveals about the election forecast and its potential impact on understanding voting behavior.
+
+*Person B*: Discuss limitations of the model and areas for further improvement.
+
+## Weaknesses and next steps
+
+Weaknesses and next steps should also be included.
+
+\newpage
+
+\appendix
+
+# Appendix {-}
+
+## Appendix A: Pollster Methodology Overview
+*Person A*: Provide a detailed methodology review for the chosen pollster, including survey design, population sampling, non-response handling, etc.
+
+## Appendix B: Idealized Survey Design for $100K Budget
+*Person C*: Develop and describe an ideal survey design for forecasting the election with a $100K budget, and include survey link.
+
+## Additional Data & Model Details
+Include any technical details on data cleaning, model diagnostics, and posterior checks.
+
+
+
+# Additional data details
+
+# Model details {#sec-model-details}
+
+## Posterior predictive check
+
+In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
+
+In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
+
+```{r}
+#| eval: true
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-ppcheckandposteriorvsprior
+#| layout-ncol: 2
+#| fig-cap: "Examining how the model fits, and is affected by, the data"
+#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
+
+pp_check(first_model) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+posterior_vs_prior(first_model) +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set1") +
+  theme(legend.position = "bottom") +
+  coord_flip()
+```
+
+## Diagnostics
+
+@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
+
+@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
+
+```{r}
+#| echo: false
+#| eval: true
+#| message: false
+#| warning: false
+#| label: fig-stanareyouokay
+#| fig-cap: "Checking the convergence of the MCMC algorithm"
+#| fig-subcap: ["Trace plot", "Rhat plot"]
+#| layout-ncol: 2
+
+plot(first_model, "trace")
+
+plot(first_model, "rhat")
+```
+
+
+\newpage
+
+
+# References
+
+
