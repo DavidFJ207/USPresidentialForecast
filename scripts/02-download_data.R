@@ -1,11 +1,12 @@
 #### Preamble ####
-# Purpose: Downloads and saves the data from [...UPDATE THIS...]
+# Purpose: Downloads and saves the presidential general election polls data 
+# from FiveThirtyEight
 # Author: Tina Kim
 # Date: 7 October 2024 
 # Contact: tinak.kim@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: None
+# Any other information needed? None
 
 
 #### Workspace setup ####
@@ -13,7 +14,6 @@ library(tidyverse)
 
 
 #### Download data ####
-
 raw_president_polls_data <-
   read_csv(
     file = 
@@ -28,7 +28,4 @@ write_csv(
 
 
 #### Save data ####
-# change the_raw_data to whatever name you assigned when you downloaded it.
-write_csv(raw_president_polls_data, "data/01-raw_data/raw_data.csv") 
-
-         
+write_csv(raw_president_polls_data, "data/01-raw_data/raw_data.csv")
