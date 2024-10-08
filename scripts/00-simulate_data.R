@@ -1,9 +1,8 @@
 #### Preamble ####
-# Purpose: Simulates a dataset of Australian electoral divisions, including the 
-  #state and party that won each division.
-# Author: Rohan Alexander
-# Date: 26 September 2024
-# Contact: rohan.alexander@utoronto.ca
+# Purpose: Simulates a dataset of American electoral polling data summary
+# Author: Gadiel David Flores
+# Date: 07 October 2024
+# Contact: davidgadiel.flores@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: The `tidyverse` package must be installed
 # Any other information needed? Make sure you are in the `starter_folder` rproj
@@ -17,36 +16,38 @@ set.seed(853)
 #### Simulate data ####
 # State names
 states <- c(
-  "New South Wales",
-  "Victoria",
-  "Queensland",
-  "South Australia",
-  "Western Australia",
-  "Tasmania",
-  "Northern Territory",
-  "Australian Capital Territory"
+  "California",
+  "Texas",
+  "Florida",
+  "New York",
+  "Pennsylvania",
+  "Illinois",
+  "Ohio",
+  "Georgia",
+  "North Carolina",
+  "Michigan"
 )
 
 # Political parties
-parties <- c("Labor", "Liberal", "Greens", "National", "Other")
+parties <- c("Republican", "Democrat", "Other")
+
+# Other parameters
+methodologies <- c("Phone", "Online", "Mixed")
+region_types <- c("Urban", "Suburban", "Rural")
 
 # Create a dataset by randomly assigning states and parties to divisions
-analysis_data <- tibble(
-  division = paste("Division", 1:151),  # Add "Division" to make it a character
-  state = sample(
-    states,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.25, 0.25, 0.15, 0.1, 0.1, 0.1, 0.025, 0.025) # Rough state population distribution
-  ),
-  party = sample(
-    parties,
-    size = 151,
-    replace = TRUE,
-    prob = c(0.40, 0.40, 0.05, 0.1, 0.05) # Rough party distribution
-  )
+analysis_data <- data.frame(
+  Date = seq(as.Date("2023-06-01"), as.Date("2023-08-31"), length.out = 10),
+  State = states,
+  Candidate_A = round(runif(10, 40, 60), 2), 
+  Candidate_B = round(runif(10, 40, 60), 2), 
+  Sample_Size = sample(500:2000, 10, replace = TRUE), 
+  Polling_Methodology = sample(methodologies, 10, replace = TRUE),
+  Region_type = sample(region_types, 10, replace = TRUE), 
+  Historical_result = sample(parties, 10, replace = TRUE), 
+  GDP = round(runif(10, 1.0, 3.0), 2),
+  Unemployment = round(runif(10, 3.0, 7.0), 2) 
 )
-
 
 #### Save data ####
 write_csv(analysis_data, "data/00-simulated_data/simulated_data.csv")
