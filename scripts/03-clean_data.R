@@ -41,14 +41,15 @@ missing_values_summary <- cleaned_data %>%
   # Order from smallest to biggest ratio value
   arrange(missing_ratio)
 
-# Find the pollster with the lowest missing values ratio because it has 
+# Find the pollster with the lowest missing values ratio because it has
 # the most complete data which could lead to a more reliable analysis
 smallest_ratio_pollster <- missing_values_summary %>%
   slice(1) %>%
   pull(pollster)
 
-# Filter cleaned data to include only the smallest ratio pollster 
-# which we will use for our data analysis
+# Filter cleaned data to include only the smallest ratio pollster.
+# This pollster is a good balance of high number of observations and a low
+# number of missing values.
 cleaned_data <- cleaned_data %>%
   filter(pollster == smallest_ratio_pollster)
 
