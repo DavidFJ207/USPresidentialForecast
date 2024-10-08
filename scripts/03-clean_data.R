@@ -1,44 +1,56 @@
 #### Preamble ####
-# Purpose: Cleans the raw plane data recorded by two observers..... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 6 April 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Cleans the raw presidential general election polls data into 
+# an analysis dataset
+# Author: Tina Kim
+# Date: 7 October 2024
+# Contact: tinak.kim@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: Need to have downloaded the data
+# Any other information needed? None
 
 #### Workspace setup ####
 library(tidyverse)
 
 #### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+raw_data <- read_csv("data/01-raw_data/raw_data.csv")
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
-  mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
-  mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+# Find the top 3 most frequent pollster in the raw data
+top_pollsters <- raw_data %>%
+  count(pollster, sort = TRUE) %>%
+  top_n(3, n) %>%
+  pull(pollster)
+
+cleaned_data <- raw_data %>%
+  # Filter the raw data to only top 3 most frequent pollster names
+  filter(pollster %in% top_pollsters) %>%
+  # Remove columns with completely empty rows
+  select(where(~ any(!is.na(.)))) 
+
+# Calculate missing values for each of the three pollsters
+missing_values_summary <- cleaned_data %>%
+  group_by(pollster) %>%
+  summarize(
+    # Missing number of variables across all columns for each pollster
+    missing_count = sum(is.na(across(everything()))),
+    # Total number of variables for each pollster
+    total_count = n() * ncol(cleaned_data),
+    .groups = 'drop'
+  ) %>%
+  # (Missing # of variables / total # of variables) ratio for each pollster
+  mutate(missing_ratio = missing_count / total_count) %>%
+  # Order from smallest to biggest ratio value
+  arrange(missing_ratio)
+
+# Find the pollster with the lowest missing values ratio because it has 
+# the most complete data which could lead to a more reliable analysis
+smallest_ratio_pollster <- missing_values_summary %>%
+  slice(1) %>%
+  pull(pollster)
+
+# Filter cleaned data to include only the smallest ratio pollster 
+# which we will use for our data analysis
+cleaned_data <- cleaned_data %>%
+  filter(pollster == smallest_ratio_pollster)
 
 #### Save data ####
-write_csv(cleaned_data, "outputs/data/analysis_data.csv")
+write_csv(cleaned_data, "data/02-analysis_data/analysis_data.csv")
