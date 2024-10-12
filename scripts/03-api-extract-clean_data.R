@@ -97,7 +97,7 @@ process_google_sheet <- function(sheet_url, output_path) {
 }
 
 #### State Dataset ####
-state_data <- read_csv("data/02-analysis_data/processed_poll_data.csv")
+state_data <- read_csv("data/02-analysis_data/states_surveys_links_data.csv")
 mega_dataset <- list()
 
 # Function to check if a string is a Google Sheets link
