@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Cleans the raw presidential general election polls data into 
+# Purpose: Cleans the raw presidential general election polls data into usable links
 # an analysis dataset
 # Author: Tina Kim
 # Date: 7 October 2024
@@ -11,7 +11,7 @@
 #### Workspace setup ####
 library(tidyverse)
 
-#### Clean data ####
+#### Clean Raw data ####
 raw_data <- read_csv("data/01-raw_data/raw_data.csv")
 
 # Find the top 3 most frequent pollster in the raw data
@@ -54,4 +54,4 @@ cleaned_data <- cleaned_data %>%
   filter(pollster == smallest_ratio_pollster)
 
 #### Save data ####
-write_csv(cleaned_data, "data/02-analysis_data/analysis_data.csv")
+write_csv(cleaned_data, "data/02-analysis_data/cleaned_poll_data.csv")
