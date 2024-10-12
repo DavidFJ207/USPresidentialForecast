@@ -14,40 +14,52 @@ set.seed(853)
 
 
 #### Simulate data ####
-# State names
-states <- c(
-  "California",
-  "Texas",
-  "Florida",
-  "New York",
-  "Pennsylvania",
-  "Illinois",
-  "Ohio",
-  "Georgia",
-  "North Carolina",
-  "Michigan"
-)
 
-# Political parties
-parties <- c("Republican", "Democrat", "Other")
+# Helper function to generate random percentages for responses that add up to 100%
+generate_percentages <- function(n) {
+  p <- runif(n)
+  return(round(p / sum(p) * 100, 2))  # Normalize to sum to 100% and round to 2 decimal places
+}
 
-# Other parameters
-methodologies <- c("Phone", "Online", "Mixed")
-region_types <- c("Urban", "Suburban", "Rural")
+# Simulate data
+states <- c("California", "Texas", "Florida", "New York", "Pennsylvania", "Illinois", "Ohio", "Georgia", "North Carolina", "Michigan")
 
-# Create a dataset by randomly assigning states and parties to divisions
+# Simulate percentages for each response type outside the data.frame
+Joe_Biden_Approval_Approve <- generate_percentages(10)
+Joe_Biden_Approval_Disapprove <- 100 - Joe_Biden_Approval_Approve
+
+Presidential_Choice_Harris <- generate_percentages(10)
+Presidential_Choice_Trump <- 100 - Presidential_Choice_Harris
+
+Safety_Concerns_More_Safe <- generate_percentages(10)
+Safety_Concerns_Less_Safe <- 100 - Safety_Concerns_More_Safe
+
+Economic_Situation_Better <- generate_percentages(10)
+Economic_Situation_Worse <- 100 - Economic_Situation_Better
+
+Past_Voting_Behavior_Biden <- generate_percentages(10)
+Past_Voting_Behavior_Trump <- 100 - Past_Voting_Behavior_Biden
+
+Ethnicity_Hispanic <- generate_percentages(10)
+Ethnicity_White <- 100 - Ethnicity_Hispanic
+
+# Create the dataset by including the simulated data
 analysis_data <- data.frame(
-  Date = seq(as.Date("2023-06-01"), as.Date("2023-08-31"), length.out = 10),
-  State = states,
-  Candidate_A = round(runif(10, 40, 60), 2), 
-  Candidate_B = round(runif(10, 40, 60), 2), 
-  Sample_Size = sample(500:2000, 10, replace = TRUE), 
-  Polling_Methodology = sample(methodologies, 10, replace = TRUE),
-  Region_type = sample(region_types, 10, replace = TRUE), 
-  Historical_result = sample(parties, 10, replace = TRUE), 
-  GDP = round(runif(10, 1.0, 3.0), 2),
-  Unemployment = round(runif(10, 3.0, 7.0), 2) 
+  State = states,  # No replacement to ensure unique states
+  Joe_Biden_Approval_Approve = Joe_Biden_Approval_Approve,
+  Joe_Biden_Approval_Disapprove = Joe_Biden_Approval_Disapprove,
+  Presidential_Choice_Harris = Presidential_Choice_Harris,
+  Presidential_Choice_Trump = Presidential_Choice_Trump,
+  Safety_Concerns_More_Safe = Safety_Concerns_More_Safe,
+  Safety_Concerns_Less_Safe = Safety_Concerns_Less_Safe,
+  Economic_Situation_Better = Economic_Situation_Better,
+  Economic_Situation_Worse = Economic_Situation_Worse,
+  Past_Voting_Behavior_Biden = Past_Voting_Behavior_Biden,
+  Past_Voting_Behavior_Trump = Past_Voting_Behavior_Trump,
+  Ethnicity_Hispanic = Ethnicity_Hispanic,
+  Ethnicity_White = Ethnicity_White
 )
 
 #### Save data ####
-write_csv(analysis_data, "data/00-simulated_data/simulated_data.csv")
+write_csv(analysis_data, "data/00-simulated_data/simulated_poll_data.csv")
+
