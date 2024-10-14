@@ -256,3 +256,6 @@ Customization:
 You can reuse the process_google_sheet function for any Google Sheet by simply providing the URL and output path. This function automates the entire workflow, so you don’t need to repeat any manual steps.
 
 Let me know if you need further adjustments or clarification!
+
+David:
+Write me code that iterates through a `state_data` dataframe to identify Google Sheets links, process the linked data using a function(process_google_sheet), and appends values from the processed data (based on matching questions) into corresponding rows and columns of a `state_survey_data` dataframe. Finally, it saves the updated `state_survey_data` as a CSV file.

@@ -1,31 +1,48 @@
+#### Preamble ####
+# Purpose: Organizes states poll links
+# an analysis dataset
+# Author: Gadiel David Flores Jimenez
+# Date: 7 October 2024
+# Contact: davidgadiel.flores@mail.utoronto.ca
+# License: MIT
+# Pre-requisites: Need to cleaned poll data
+# Any other information needed? Intall googledrive and googleAuthR
 library(tidyverse)
 
 # Load the poll links data
 poll_links_data <- read_csv("data/02-analysis_data/survey_list_data.csv")
 
-
-# Create a new dataset with unique states and URLs and their corresponding party columns
-new_poll_data <- poll_links_data %>%
-  # Group by state
+#### Pivot for URL crosstabs ####
+url_pivot <- poll_links_data %>%
   group_by(state) %>%
-  # Rank the URLs for each state
   mutate(url_rank = row_number()) %>%
-  # Select relevant columns
-  select(state, url_crosstab, sample_size, party, url_rank) %>%
-  # Spread URLs and their corresponding parties into separate columns based on the rank
+  select(state, url_crosstab, url_rank) %>%
   pivot_wider(
     names_from = url_rank,
-    values_from = c(url_crosstab, party),
-    names_prefix = c("url_crosstab_", "party_")
-  ) %>%
-  # Calculate the average sample size for each state
-  group_by(state) %>%
-  summarize(
-    across(starts_with("url_crosstab"), ~ first(na.omit(.)), .names = "{col}"),
-    across(starts_with("party"), ~ first(na.omit(.)), .names = "{col}"),
-    average_sample_size = mean(sample_size, na.rm = TRUE)
+    values_from = url_crosstab,
+    names_prefix = "url_crosstab_"
   ) %>%
   ungroup()
 
-# Optionally, save the new dataset to a CSV file
-write_csv(new_poll_data, "data/02-analysis_data/processed_poll_data.csv")
+#### Shift non-NA values to the left in relevant columns ####
+# Define columns to shift
+columns_to_shift <- names(url_pivot)[!(names(url_pivot) %in% c("state"))]
+
+# Function to shift values to the left
+shift_left <- function(row) {
+  non_na_values <- row[!is.na(row)]  # Keep only non-NA values
+  c(non_na_values, rep(NA, length(row) - length(non_na_values)))  # Fill the remaining with NA
+}
+
+# Apply shift_left function
+new_poll_data_clean <- url_pivot %>%
+  mutate(across(all_of(columns_to_shift), ~ shift_left(.)))
+
+#### Remove columns that are NA ####
+new_poll_data_clean <- new_poll_data_clean %>%
+  select(where(~ any(!is.na(.)))) 
+
+#### Save the cleaned dataset ####
+write_csv(new_poll_data_clean, "data/02-analysis_data/processed_poll_data.csv")
+
+

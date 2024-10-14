@@ -11,13 +11,19 @@
 # Authenticate your Google account
 gs4_auth()
 
-#### Load Libraries ####
+#### Load Libraries and files ####
 library(googledrive)
 library(readxl)
 library(tidyverse)
 library(dplyr)
-
+state_data <- read_csv("data/02-analysis_data/processed_poll_data.csv")
+mega_dataset_combined <- read_csv("data/02-analysis_data/mega_dataset.csv")
 #### Helper Functions ####
+
+# Function to check if a string is a Google Sheets link
+is_google_sheet_link <- function(text) {
+  grepl("docs.google.com/spreadsheets", text)
+}
 
 # Function to download and read a Google Sheet
 download_and_read_google_sheet <- function(url) {
@@ -96,14 +102,70 @@ process_google_sheet <- function(sheet_url, output_path) {
   return(merged_data)
 }
 
-#### State Dataset ####
-state_data <- read_csv("data/02-analysis_data/states_surveys_links_data.csv")
-mega_dataset <- list()
+#### Create final dataset ####
 
-# Function to check if a string is a Google Sheets link
-is_google_sheet_link <- function(text) {
-  grepl("docs.google.com/spreadsheets", text)
+item_counts <- table(mega_dataset_combined[[1]])
+# Get the unique items from the first column
+unique_items_column1 <- unique(mega_dataset_combined[[1]])
+# Convert the table to a dataframe
+item_counts_df <- as.data.frame(item_counts)
+# Rename the columns for clarity
+colnames(item_counts_df) <- c("Item", "Count")
+# Filter out rows where the count is less than 40
+item_counts_filtered <- item_counts_df %>%
+  filter(Count >= 49)
+
+# create dataset with correct headers
+item_list <- as.character(item_counts_filtered$Item)
+state_survey_data <- data.frame(matrix(ncol = length(item_list) + 1, nrow = 0))
+colnames(state_survey_data) <- c("state", item_list)
+names <- state_survey_data
+state_survey_data$state <- as.character(state_survey_data$state)
+state_data$state <- as.character(state_data$state)
+
+# Now append the state column from state_data to state_survey_data
+state_survey_data <- bind_rows(state_survey_data, data.frame(state = state_data$state))
+#### Loop to append data ####
+# Iterate through the entire state_data dataframe
+for (i in seq_len(nrow(state_data))) {
+  for (j in seq_len(ncol(state_data))) {
+    cell_value <- as.character(state_data[i, j])  # Get the cell value as a string
+    state_value <- as.character(state_data[i, 1]) # Get the state value from the current row of state_data (assuming state is in the first column)
+    
+    # Check if the cell contains a Google Sheets link
+    if (!is.na(cell_value) && is_google_sheet_link(cell_value)) {
+      
+      # Process the Google Sheet link
+      tryCatch({
+        processed_data <- process_google_sheet(cell_value, output_path = NULL)  # Use your process_google_sheet function
+        
+        # Iterate through processed_data rows
+        for (k in 1:nrow(processed_data)) {
+          # Get the question from processed_data
+          question_to_match <- as.character(processed_data[k, 1])  # Question (header) from processed_data
+          value_to_append <- as.character(processed_data[k, 3])  # Value to append
+          
+          # Ensure the question matches a column in state_survey_data
+          if (question_to_match %in% colnames(state_survey_data)) {
+            # Get the column index of the matching question in state_survey_data
+            question_index <- which(colnames(state_survey_data) == question_to_match)
+            
+            # Append the value to the current row (state) and matching column (question)
+            state_survey_data[i, question_index] <- value_to_append
+          }
+        }
+      }, error = function(e) {
+        # Handle errors if any occur during the process (e.g., invalid link)
+        message(paste("Error processing link:", cell_value, e))
+      })
+    }
+  }
 }
+
+
+write_csv(state_survey_data, "data/02-analysis_data/summarized_state_poll_data.csv")
+#### State Dataset ####
+mega_dataset <- list()
 
 # Iterate through the entire state_data dataframe
 for (i in seq_len(nrow(state_data))) {
@@ -129,11 +191,5 @@ for (i in seq_len(nrow(state_data))) {
 
 # Combine all data frames in mega_dataset into one
 mega_dataset_combined <- bind_rows(mega_dataset)
-
-# View the final mega dataset
-print(mega_dataset_combined)
-
-# Optionally, save the final dataset to a CSV file
+# Save the dataset to a CSV file
 write_csv(mega_dataset_combined, "data/02-analysis_data/mega_dataset.csv")
-
-unique_items_column1 <- unique(mega_dataset_combined[[1]])
