@@ -41,7 +41,7 @@ The remainder of this paper is structured as follows. @sec-data....
 # Data {#sec-data}
 
 ## Overview
-We use the statistical programming language R [@citeR] and utilize the "Presidential general election polls" dataset [@source]. 
+We obtained the "Presidential general election polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and used the statistical programming language R [@citeR] to analyze this data. 
 
 *Person A:* Provide an overview of the dataset's context, sources, and key variables.
 
