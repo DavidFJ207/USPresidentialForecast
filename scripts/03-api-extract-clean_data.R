@@ -161,8 +161,6 @@ for (i in seq_len(nrow(state_data))) {
     }
   }
 }
-
-
 write_csv(state_survey_data, "data/02-analysis_data/summarized_state_poll_data.csv")
 #### State Dataset ####
 mega_dataset <- list()
@@ -193,3 +191,23 @@ for (i in seq_len(nrow(state_data))) {
 mega_dataset_combined <- bind_rows(mega_dataset)
 # Save the dataset to a CSV file
 write_csv(mega_dataset_combined, "data/02-analysis_data/mega_dataset.csv")
+
+#### Organize and delete Cleaned Dataset ####
+state_polls <- read_csv("data/02-analysis_data/summarized_state_poll_data.csv")
+# Delete totals of states
+state_polls <- state_polls %>%
+  select(-matches(".*Total$"))
+
+# Delete empty states
+state_polls <- state_polls[-c(26:44), ]
+
+# Change the value in cell 1 to "National"
+state_polls[1, 1] <- "National"
+
+# Delete columns with more than 10 NAs
+state_polls_clean <- state_polls %>%
+  select(where(~ sum(is.na(.)) <= 15))
+
+
+# Save CSV file
+write_csv(state_polls_clean, "data/02-analysis_data/non_missing_state_poll_data.csv")
