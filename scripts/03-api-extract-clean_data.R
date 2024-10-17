@@ -206,7 +206,7 @@ state_polls[1, 1] <- "National"
 
 # Delete columns with more than 10 NAs
 state_polls_clean <- state_polls %>%
-  select(where(~ sum(is.na(.)) <= 15))
+  select(where(~ sum(is.na(.)) <= 2))
 
 
 # Save CSV file

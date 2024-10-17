@@ -45,10 +45,24 @@ We obtained the "Presidential general election polls" dataset from FiveThirtyEig
 
 *Person A:* Provide an overview of the dataset's context, sources, and key variables.
 
+Our objective was to clean, organize, and analyze polling data for the U.S. presidential general election. Below is an outline of the steps we took to achieve this goal:
+
+### 1. **Cleaning Raw Poll Data**
+We began by identifying the three most frequent pollsters within the dataset, focusing on these pollsters to improve data reliability and relevance. Missing values were assessed for each pollster, and the pollster with the fewest missing values was selected to ensure more complete data for further analysis. This refined dataset was then saved for the next stages of the process.
+
+### 2. **Organizing Poll Links by State**
+Next, we organized the polling data by state, ranking the links for each state to facilitate easier access. To ensure clarity, missing values were shifted to the end of each state’s record, and unnecessary empty columns were removed. This resulted in a more structured and user-friendly dataset, which was stored for future use.
+
+### 3. **Extracting and Merging Poll Data from Links**
+Following that, we extracted and merged additional polling data from Google Sheets links included in the dataset. After confirming the validity of these links, we cleaned the data by removing unwanted entries and filled in any missing values where possible. This updated dataset was then merged with the original dataset to create a more comprehensive compilation of polling data.
+
+### 4. **Final Organization and Refinement**
+In the final stage, we further refined the dataset by removing unnecessary rows (such as totals and empty states) and renaming specific entries for clarity (e.g., changing "State" to "National"). Columns with excessive missing values were also eliminated to ensure that only the most reliable and complete data remained. This final, polished dataset was saved, ready for subsequent analysis and reporting.
+
 ## Measurement
 Describe how the real-world phenomenon (voter preference) is translated into a dataset entry.
 
-*Person A:* Discuss the survey design, the process of data collection, and potential biases or errors in measurement.
+*Person C:* Discuss the survey design, the process of data collection, and potential biases or errors in measurement.
 
 ## Outcome variables
 Add graphs, tables, and text for each outcome variable. Use subsections as needed.
@@ -75,14 +89,6 @@ And also planes (@fig-planes). (You can change the height and width, but don't w
 #| warning: false
 #| message: false
 
-analysis_data <- read_csv(here::here("data/02-analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
 ```
 
 Talk way more about it. 
@@ -90,7 +96,7 @@ Talk way more about it.
 ## Predictor variables
 Add graphs, tables, and text to describe key predictors.
 
-*Person A:*: Visualize variable distributions (e.g., histograms, boxplots), and justify the inclusion of predictors in the model.
+*Person B:*: Visualize variable distributions (e.g., histograms, boxplots), and justify the inclusion of predictors in the model.
 
 ```{r}
 #| label: fig-predictors
@@ -166,7 +172,7 @@ Please don't use these as sub-heading labels - change them to be what your point
 
 Discuss what the model reveals about the election forecast and its potential impact on understanding voting behavior.
 
-*Person B*: Discuss limitations of the model and areas for further improvement.
+*Person C*: Discuss limitations of the model and areas for further improvement.
 
 ## Weaknesses and next steps
 
@@ -209,15 +215,6 @@ In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. Th
 #| fig-cap: "Examining how the model fits, and is affected by, the data"
 #| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
 
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
 ```
 
 ## Diagnostics
@@ -236,9 +233,6 @@ posterior_vs_prior(first_model) +
 #| fig-subcap: ["Trace plot", "Rhat plot"]
 #| layout-ncol: 2
 
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
 ```
 
 
