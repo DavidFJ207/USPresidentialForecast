@@ -190,6 +190,14 @@ Weaknesses and next steps should also be included.
 ## Appendix B: Idealized Survey Design for $100K Budget
 *Person C*: Develop and describe an ideal survey design for forecasting the election with a $100K budget, and include survey link.
 
+Sampling approach: The sampling approach we will use is stratified random sampling where we divide the population into strata based on.... (age, gender, education level, etc.)
+Recruit Respondents: We will recruit respondents using an online survey on Google Forms so that we can minimize the cost and maximize the range of respondents we can reach. We will spend a portion of our budget (specify here) to advertise these surveys and also send out emails, with an additional monetary incentive (specify here) to encourage more participation. 
+Data validation: IP address tracking to prevent duplicate responses.
+Poll Aggregation: Incorporate Bayesian Inference.
+
+Survey Link: (Short questionnaire asking for demographic questions to be added here)
+Copy of Survey: 
+
 ## Additional Data & Model Details
 Include any technical details on data cleaning, model diagnostics, and posterior checks.
 
