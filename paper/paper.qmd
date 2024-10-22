@@ -18,9 +18,14 @@ bibliography: references.bib
 #| include: false
 #| warning: false
 #| message: false
-
 library(tidyverse)
-library(palmerpenguins)
+library(dplyr)
+library(knitr)
+library(lubridate)
+library(ggplot2)
+library(ggcorrplot)
+library(kableExtra)
+
 ```
 
 
@@ -38,75 +43,212 @@ library(palmerpenguins)
 The remainder of this paper is structured as follows: Section 2 details the data and measurement process; Section 3 covers model development and results; Section 4 discusses implications and future steps.
 The remainder of this paper is structured as follows. @sec-data....
 
+
 # Data {#sec-data}
 
 ## Overview
-We obtained the "Presidential general election polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and used the statistical programming language R [@citeR] to analyze this data. 
+We sourced the "Presidential General Election Polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and performed an in-depth analysis using the statistical programming language R [@citeR].
 
-*Person A:* Provide an overview of the dataset's context, sources, and key variables.
-
-Our objective was to clean, organize, and analyze polling data for the U.S. presidential general election. Below is an outline of the steps we took to achieve this goal:
-
-### 1. **Cleaning Raw Poll Data**
-We began by identifying the three most frequent pollsters within the dataset, focusing on these pollsters to improve data reliability and relevance. Missing values were assessed for each pollster, and the pollster with the fewest missing values was selected to ensure more complete data for further analysis. This refined dataset was then saved for the next stages of the process.
-
-### 2. **Organizing Poll Links by State**
-Next, we organized the polling data by state, ranking the links for each state to facilitate easier access. To ensure clarity, missing values were shifted to the end of each state’s record, and unnecessary empty columns were removed. This resulted in a more structured and user-friendly dataset, which was stored for future use.
-
-### 3. **Extracting and Merging Poll Data from Links**
-Following that, we extracted and merged additional polling data from Google Sheets links included in the dataset. After confirming the validity of these links, we cleaned the data by removing unwanted entries and filled in any missing values where possible. This updated dataset was then merged with the original dataset to create a more comprehensive compilation of polling data.
-
-### 4. **Final Organization and Refinement**
-In the final stage, we further refined the dataset by removing unnecessary rows (such as totals and empty states) and renaming specific entries for clarity (e.g., changing "State" to "National"). Columns with excessive missing values were also eliminated to ensure that only the most reliable and complete data remained. This final, polished dataset was saved, ready for subsequent analysis and reporting.
-
-## Measurement
-Describe how the real-world phenomenon (voter preference) is translated into a dataset entry.
-
-*Person C:* Discuss the survey design, the process of data collection, and potential biases or errors in measurement.
-
-## Outcome variables
-Add graphs, tables, and text for each outcome variable. Use subsections as needed.
-
-
-Some of our data is (@fig-outcome), from @source
+Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary provides a snapshot of these findings.
 
 ```{r}
-#| label: fig-outcome
-#| fig-cap: Example Outcome Variable Visualization
-#| echo: false
-# Visualization code
-
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
 #| echo: false
 #| warning: false
 #| message: false
 
+
+set.seed(754)
+poll_data <- read_csv(here::here(
+  "data/02-analysis_data/organized_state_poll_data.csv"))
+
+# Name references
+column_refs <- list(
+  democrat = "democrat_pct",
+  republican = "republican_pct",
+  highly_educated = "What is the highest level of education you have attained? College graduate",
+  lower_educated = "What is the highest level of education you have attained? High school or less",
+  female = "Can you please tell me your gender? Female",
+  male = "Can you please tell me your gender? Male",
+  non_binary_other = "Can you please tell me your gender? Nonbinary or other",
+  caucasian = "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  young_age_18_29 = "What is your age range? 18-29 years",
+  young_age_30_39 = "What is your age range? 30-39 years",
+  young_age_40_49 = "What is your age range? 40-49 years",
+  older_age_50_59 = "What is your age range? 50-59 years",
+  older_age_60_69 = "What is your age range? 60-69 years",
+  older_age_70_more = "What is your age range? 70 or more years"
+)
+
 ```
-
-Talk way more about it. 
-
-## Predictor variables
-Add graphs, tables, and text to describe key predictors.
-
-*Person B:*: Visualize variable distributions (e.g., histograms, boxplots), and justify the inclusion of predictors in the model.
 
 ```{r}
-#| label: fig-predictors
+#| label: fig-predictors-pct-summary
+#| tbl-cap: "Latest Poll Points by Party"
+#| echo: false
+#| warning: false
+#| message: false
+
+poll_summary <- poll_data %>%
+  group_by(state) %>%   
+  summarise(
+    dem_total_pct = sum(democrat_pct, na.rm = TRUE),
+    rep_total_pct = sum(republican_pct, na.rm = TRUE),
+    highly_educated_pct = mean(`What is the highest level of education you have attained? College graduate`, na.rm = TRUE),
+    lower_educated_pct = mean(`What is the highest level of education you have attained? High school or less`, na.rm = TRUE),
+    female_pct = mean(`Can you please tell me your gender? Female`, na.rm = TRUE),
+    male_pct = mean(`Can you please tell me your gender? Male`, na.rm = TRUE),
+    non_binary_other_pct = mean(`Can you please tell me your gender? Nonbinary or other`, na.rm = TRUE),
+    caucasian_pct = mean(`For statistical purposes only, can you please tell me your ethnicity? White or Caucasian`, na.rm = TRUE),
+    minority_pct = 100 - caucasian_pct,
+    age_young_pct = mean(`What is your age range? 18-29 years`, na.rm = TRUE) + 
+                    mean(`What is your age range? 30-39 years`, na.rm = TRUE) + 
+                    mean(`What is your age range? 40-49 years`, na.rm = TRUE),
+    older_pct = mean(`What is your age range? 50-59 years`, na.rm = TRUE) + 
+                mean(`What is your age range? 60-69 years`, na.rm = TRUE) + 
+                mean(`What is your age range? 70 or more years`, na.rm = TRUE)
+  ) %>%
+  mutate(across(everything(), ~ replace_na(., 0))) %>%  # Replace NA values with 0
+  mutate(across(where(is.numeric), ~ round(., 1)))  # Round to nearest tenth
+
+colnames(poll_summary) <- c("State", "Democrat Pct", "Republican Pct", 
+                            "High Educated", "Low Educated", "Female", 
+                            "Male", "Nonbinary", "Caucasian", 
+                            "Minority Ethnicity", "Young Age", "Older Age")
+poll_summary_party <- poll_summary %>%
+  select(State, `Democrat Pct`, `Republican Pct`)
+
+poll_summary_demographics <- poll_summary %>%
+  select(State, `High Educated`, `Low Educated`, `Female`, 
+         `Male`, `Nonbinary`, `Caucasian`, 
+         `Minority Ethnicity`, `Young Age`, `Older Age`)
+
+kable(poll_summary_party) %>%
+  kable_styling(font_size = 10, position = "center", full_width = FALSE)
+
+# Second table for demographic variables
+kable(poll_summary_demographics) %>%
+  kable_styling(font_size = 6, position = "center", full_width = FALSE)
+
+```
+\newpage  
+## Measurement
+For this analysis, we selected Emerson as our primary pollster. The rationale behind this choice is explained in detail in @sec-appenA. Emerson’s polls provided essential details, including polling date ranges, party affiliations, sample sizes, and the percentage breakdown of support for different political parties.
+
+We focused on analyzing voter preferences based on party affiliation rather than individual candidate support, as this was more relevant to predicting overall trends. By capturing the broader party dynamics, our model aims to forecast how states are likely to swing in future elections, especially with respect to swing states. This focus will be elaborated in our results section, @sec-results.
+
+Additionally, the Emerson dataset included critical demographic data, such as respondents' political preferences, motivations for voting in the 2024 election, opinions on Donald Trump’s legal battles, and perspectives on major political figures and issues. These details, coupled with information on party affiliation, sources of political news, and other personal attributes, allowed us to paint a richer picture of the voting landscape.
+
+To ensure uniformity across all states, we concentrated on questions that were consistently asked across the entire dataset. This enabled us to perform state-level aggregation and analysis without being limited by state-specific polling questions, ensuring a standardized approach across the board.
+
+## Outcome variables
+The initial analysis of the dataset revealed some key trends in party preferences across different states. In @fig-party-results, we illustrate which states exhibit the strongest leanings toward either the Democratic or Republican party. This visualization plays a crucial role in identifying the pivotal swing states that lie close to the center of the graph. These swing states, which show near-equal support for both parties, are of particular interest for future election predictions, as they are likely to determine the overall election outcome.
+
+```{r}
+#| label: fig-party-results
 #| fig-cap: Example Predictor Variable Visualization
 #| echo: false
-# Visualization code
+
+poll_summary <- poll_data %>%
+  group_by(state) %>%   
+  summarise(
+    dem_total_pct = sum(democrat_pct, na.rm = TRUE),
+    rep_total_pct = sum(republican_pct, na.rm = TRUE)
+  ) %>%
+   mutate(party_diff = dem_total_pct - rep_total_pct)
+
+# Create the vertical bar graph
+ggplot(poll_summary, aes(x = party_diff, y = reorder(state, party_diff))) +
+  geom_col(aes(fill = party_diff > 0), show.legend = FALSE) +  
+  scale_fill_manual(values = c("red", "blue")) +  
+  labs(x = "Party Lean (Democrat vs. Republican)", y = "State",
+       title = "Party Leaning by State (Democrat vs. Republican)") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 6))  
 
 ```
 
-# Pollster Methodology Overview (Appendix A)
+By visualizing the difference between Democratic and Republican preferences across states, we are able to pinpoint which states are firmly partisan and which fall closer to the center, indicating their potential to swing either way in future elections.
+
+## Predictor variables
+
+Next, we take a deeper dive into the various demographic and social factors that influence voter preferences. The predictors we consider include education levels, gender, ethnicity, and age group. These variables are crucial as they shape political preferences and are likely to influence which way a state leans politically.
+
+In @fig-predictors-party-pct, we explore how these factors correlate with party lean across the U.S. states. For instance, higher levels of education may correlate with a greater likelihood of supporting the Democratic party, while other demographic factors such as ethnicity and age may play different roles in shaping political affiliation. This analysis helps us to identify which factors have the greatest influence in each state, offering a clearer understanding of what drives the electorate.
+
+```{r}
+#| label: fig-predictors-party-pct
+#| fig-cap: Example Predictor Variable Visualization
+#| echo: false
+
+# Calculate poll_summary with rounding to the nearest tenth
+poll_summary <- poll_data %>%
+  group_by(state) %>%
+  summarise(
+    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1),
+    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
+    highly_educated_pct = round(mean(.data[[column_refs$highly_educated]], na.rm = TRUE), 1),
+    lower_educated_pct = round(mean(.data[[column_refs$lower_educated]], na.rm = TRUE), 1),
+    female_pct = round(mean(.data[[column_refs$female]], na.rm = TRUE), 1),
+    male_pct = round(mean(.data[[column_refs$male]], na.rm = TRUE), 1),
+    non_binary_other_pct = round(mean(.data[[column_refs$non_binary_other]], na.rm = TRUE), 1),
+    caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
+    minority_pct = round(100 - caucasian_pct, 1),
+    age_young_pct = round(mean(.data[[column_refs$young_age_18_29]], na.rm = TRUE) + 
+                          mean(.data[[column_refs$young_age_30_39]], na.rm = TRUE) + 
+                          mean(.data[[column_refs$young_age_40_49]], na.rm = TRUE), 1),
+    older_pct = round(mean(.data[[column_refs$older_age_50_59]], na.rm = TRUE) + 
+                      mean(.data[[column_refs$older_age_60_69]], na.rm = TRUE) + 
+                      mean(.data[[column_refs$older_age_70_more]], na.rm = TRUE), 1)
+  ) %>%
+  mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
+  drop_na()
+
+# Select relevant numeric columns for correlation matrix, excluding PartyDifference
+corr_data <- poll_summary %>%
+  select(
+    Democrat = dem_total_pct,
+    Republican = rep_total_pct,
+    HighlyEducated = highly_educated_pct,
+    LowerEducated = lower_educated_pct,
+    Female = female_pct,
+    Male = male_pct,
+    NonBinary = non_binary_other_pct,
+    Caucasian = caucasian_pct,
+    Minority = minority_pct,
+    YoungAge = age_young_pct,
+    OlderAge = older_pct
+  )
+
+# Calculate the correlation matrix
+cor_matrix <- cor(corr_data, use = "complete.obs")
+
+# Set correlations less than -0.9 to NA
+cor_matrix[cor_matrix < -0.9] <- NA
+
+# Visualize the correlation matrix without hierarchical clustering
+ggcorrplot(cor_matrix, 
+           hc.order = FALSE,  
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 2,  # Size for correlation labels
+           title = "Correlation Matrix of Predictors and Party Lean",
+           colors = c("blue", "white", "red"),  
+           legend.title = "Correlation") +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5),  # Title size and centered
+    axis.text = element_text(size = 1),  # Axis text size
+    legend.text = element_text(size = 10),  # Legend text size
+    legend.title = element_text(size = 10),  # Legend title size
+    axis.title = element_text(size = 1),  # Axis labels size
+  )
+
+
+```
+The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.
+
+This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.
+
+# Pollster Methodology Overview (Appendix A) {#sec-appenA}  
 Append a detailed review of a chosen pollster's methodology, survey techniques, strengths, and weaknesses.
 
 # Model {#sec-model}
@@ -136,7 +278,7 @@ We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use
 Our results are summarized in @tbl-modelresults. Discuss the implications of the findings and their predictive accuracy.
 
 
-# Results
+# Results {#sec-results}
 
 Our results are summarized in @tbl-modelresults.
 

@@ -157,8 +157,6 @@ process_excel_sheet <- function(excel_url, output_path) {
 #### Create final dataset ####
 
 item_counts <- table(mega_dataset_combined[[1]])
-# Get the unique items from the first column
-unique_items_column1 <- unique(mega_dataset_combined[[1]])
 # Convert the table to a dataframe
 item_counts_df <- as.data.frame(item_counts)
 # Rename the columns for clarity

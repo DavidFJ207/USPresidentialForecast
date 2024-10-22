@@ -1,0 +1,41 @@
+David
+Can you make a vertical bar graph that organizes every state on the y axis from a ratio. 0 being the middle where it is 50 - 50 with 50 democrat_pct and 50 in republican_pct. if you move to the left it goes up to 50% where the furthest left state is the one that has a high republican_pct and if you move to the right, democrats have the most points
+ChatGPT said:
+ChatGPT
+To create a vertical bar graph with every state on the y-axis and a ratio (democrat_pct vs. republican_pct) on the x-axis, where 0 represents a 50-50 split between the parties, you can calculate the ratio as follows:
+
+The ratio could be democrat_pct - republican_pct, where a positive value indicates a Democrat-leaning state and a negative value indicates a Republican-leaning state.
+Here’s how you can implement the graph using ggplot2:
+
+r
+Copy code
+library(ggplot2)
+
+# Calculate the difference between democrat_pct and republican_pct
+poll_summary <- poll_data %>%
+  group_by(state) %>%   
+  summarise(
+    dem_total_pct = sum(democrat_pct, na.rm = TRUE),
+    rep_total_pct = sum(republican_pct, na.rm = TRUE)
+  ) %>%
+  mutate(party_diff = dem_total_pct - rep_total_pct)  # Calculate difference between democrat and republican percentages
+
+# Create the vertical bar graph
+ggplot(poll_summary, aes(x = party_diff, y = reorder(state, party_diff))) +
+  geom_col(aes(fill = party_diff > 0), show.legend = FALSE) +  # Color based on party dominance
+  scale_fill_manual(values = c("red", "blue")) +  # Assign colors for Republicans and Democrats
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black") +  # Dashed line at 0
+  labs(x = "Party Lean (Democrat vs. Republican)", y = "State",
+       title = "Party Leaning by State (Democrat vs. Republican)") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8))  # Adjust text size for readability
+Explanation:
+Calculate the Party Difference: The new column party_diff is the difference between democrat_pct and republican_pct. Positive values indicate a Democrat lean, and negative values indicate a Republican lean.
+geom_col() for the Bars: We use geom_col() to create a bar graph, with the fill argument coloring the bars based on which party has a higher percentage.
+Coloring: The graph colors states blue if Democrats have the lead and red if Republicans have the lead.
+Center Line: A vertical dashed line (geom_vline()) is added at x=0 to mark the middle (50-50 split).
+Reordering States: The reorder() function is used on the y-axis to sort states based on the party difference, so states with the highest Republican lean are on the left and the highest Democratic lean on the right.
+This graph will help you visualize the states based on their party leaning, with the midpoint representing a perfect 50-50 split. Let me know if you need any adjustments!
+
+David: 
+Write an R script that calculates summary statistics for a poll dataset, including demographic variables and party preference percentages. After calculating the summary statistics, create a correlation matrix with selected variables and remove correlations that are less than -0.9. Then, visualize the correlation matrix using a heatmap, where blue represents correlations associated with Democrats and red represents correlations associated with Republicans. Ensure that hierarchical clustering is turned off in the heatmap visualization. The variables to include are the percentages for Democrat and Republican party preferences, education levels (highly educated and lower educated), gender (female, male, non-binary), ethnicity (Caucasian, minority), and age groups (young and older).
