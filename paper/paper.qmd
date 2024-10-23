@@ -31,9 +31,9 @@ library(kableExtra)
 
 # Introduction
 
-*Overview paragraph:* Provide a brief overview of the context of the upcoming US presidential election and the importance of forecasting its results.
+*Overview paragraph:* The 2024 United States of America Presidential Election is to elect the fourty-seventh president of USA, with the two candidates as Donald Trump, the fourty-fifth president of the United States and representative of the Republican Party, and Kamala Harris, current vice president of the United States and representative of the Democratic Party, after Joe Biden announced that he will not continue participate in this presidential election anymore (@BidenQuits). Democracy can be described as liberal and left-leaning, with the emphasis of economy intervention with implementation of policies such as minimum wage and progressive tax rates. Members of the Republican party tend to follow the free economy, and can be described as right-leaning (@RepDem). The results of the 2024 Presidential Election will determine which political party, Republican or Democratic, will become the leader of the United States for the next four years, largely affecting the policies implemented in the United States during this time period. Due to the strong nation power of the United States, this may even affect the world's economic trends in the four years. Therefore, predicting results of the upcoming 2024 United States Presidential Election is a necessary action.
 
-*Estimand paragraph:* Define the estimand clearly (e.g., predicting the probability of a candidate winning the election based on poll data).
+*Estimand paragraph:* To predict results of the 2024 United States of America Presidential Election, our aim is clearly to conclude which candidate, either Harris or Trump, is more likely to win this election. Our response variable is in turn the probability of one candidate winning the election based on poll data, with our chosen poll as Emerson. When the supporting percentage of one candidate, or the party s/he represents, is only slightly less than 50%, we cannot clearly determine whether s/he would be predicted to have been elected as the fourty-seventh US President or not, since there is a group of people who did not choose to participate in the voting process. Therefore, to increase accuracy of predictions, we will build two models, one model with the estimand as the probability of Harris, or the Democratic party, winning the election, and another with the estimand as the probability of Trump, or the Republican party, winning the election. By comparing the two predictions, one can get a final prediction of who is more likely to be elected as the next President of the United States of America.
 
 *Results paragraph:* Summarize the key findings of the model, highlighting its predictive accuracy and implications.
 
@@ -42,7 +42,6 @@ library(kableExtra)
 *Telegraphing paragraph:* 
 The remainder of this paper is structured as follows: Section 2 details the data and measurement process; Section 3 covers model development and results; Section 4 discusses implications and future steps.
 The remainder of this paper is structured as follows. @sec-data....
-
 
 # Data {#sec-data}
 
@@ -244,7 +243,7 @@ ggcorrplot(cor_matrix,
 
 
 ```
-The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.
+The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender- are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.
 
 This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.
 
@@ -254,7 +253,50 @@ Append a detailed review of a chosen pollster's methodology, survey techniques, 
 # Model {#sec-model}
 
 ## Model Development
-The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election.
+The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election, and we will choose the predictor variables based on the the correlation matrix we created previously (@fig-predictors-party-pct). Also, if we choose either the percentage of people who vote for Trump (representing the Republican Party) or Harris (representing the Democratic Party), that number being slightly below 50% does not necessarily means that the corresponding person will not be elected as the next President of the United States, since there is a percentage of people who choose to not vote. Therefore, our final choice is to construct two linear/generalized linear models, one for the percentage that Trump will become the next President and one for Harris respectively. One can then compare the two predicted percentage of people voting for the corresponding President to get the final prediction of who is more likely to be the next President of the United States.
+
+Now we will determine whether to choose generalized linear or linear model for each of the two models by checking the respective normalities of the response variables, which will be the percentage of people supporting the Republican party and the percentage of people supoporting the Democratic party respectively. The following @fig-hist-for-republican is the histogram of the Republican Party Supporting Rate, describing the distribution of the response variable for the first model.
+
+```{r}
+#| label: fig-hist-for-republican
+#| fig-cap: Distribution of Republican Party Supporting Rate
+#| echo: false
+
+# Calculate the variable that represents the Republican Party Supporting Rate
+# grouped based on various states
+data_rep1 <- poll_data %>%
+  group_by(state) %>%
+  summarise(
+    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1)
+  )
+
+# Create a histogram based on targeted data variable
+ggplot(data = data_rep1, aes(x=rep_total_pct)) +
+  geom_histogram(binwidth = 2) +
+  labs(title = "Republic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
+
+```
+And the following @fig-hist-for-democratic is the histogram of the Democratic Party Supporting Rate, describing the distribution of the response variable for the second model.
+```{r}
+#| label: fig-hist-for-democratic
+#| fig-cap: Distribution of Democratic Party Supporting Rate
+#| echo: false
+
+# Calculate the variable that represents the Republican Party Supporting Rate
+# grouped based on various states
+data_rep1 <- poll_data %>%
+  group_by(state) %>%
+  summarise(
+    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1)
+  )
+
+# Create a histogram based on targeted data variable
+ggplot(data = data_rep1, aes(x=dem_total_pct)) +
+  geom_histogram(binwidth = 2) +
+  labs(title = "Democratic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
+
+```
+According to @fig-hist-for-democratic and @fig-hist-for-democratic, both response variables' distributions do not seem to be normal. The distribution of the variable democratic party supporting rate tends to be poisson, since most percentages have a similar frequency, with an outliar at around 67 to 68 percent. The distribution of the variable republic party supporting rate has a maximum frequency at the percentage of around 50 percent, but has similaer frequencies at around 25 to 26 percent and around 48 to 49 percent, which may indicate a violation of the normal distribution property. Therefore, since the response variables of both models are not normally-distributed, a generalized linear model, instead of a linear model, will be used for both models.
 
 *Person B:* Choose a linear or generalized linear model. Justify the selection based on your research goal and data structure.
 
