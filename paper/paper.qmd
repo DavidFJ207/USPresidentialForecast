@@ -44,40 +44,19 @@ The remainder of this paper is structured as follows: Section 2 details the data
 The remainder of this paper is structured as follows. @sec-data....
 
 
-# Data {#sec-data}
+\newpage  
+# Data {#sec-data}  
 
-## Overview
-We sourced the "Presidential General Election Polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and performed an in-depth analysis using the statistical programming language R [@citeR].
-
-Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary provides a snapshot of these findings.
+## Overview  
 
 ```{r}
 #| echo: false
 #| warning: false
 #| message: false
 
-
 set.seed(754)
 poll_data <- read_csv(here::here(
   "data/02-analysis_data/organized_state_poll_data.csv"))
-
-# Name references
-column_refs <- list(
-  democrat = "democrat_pct",
-  republican = "republican_pct",
-  highly_educated = "What is the highest level of education you have attained? College graduate",
-  lower_educated = "What is the highest level of education you have attained? High school or less",
-  female = "Can you please tell me your gender? Female",
-  male = "Can you please tell me your gender? Male",
-  non_binary_other = "Can you please tell me your gender? Nonbinary or other",
-  caucasian = "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
-  young_age_18_29 = "What is your age range? 18-29 years",
-  young_age_30_39 = "What is your age range? 30-39 years",
-  young_age_40_49 = "What is your age range? 40-49 years",
-  older_age_50_59 = "What is your age range? 50-59 years",
-  older_age_60_69 = "What is your age range? 60-69 years",
-  older_age_70_more = "What is your age range? 70 or more years"
-)
 
 ```
 
@@ -99,13 +78,7 @@ poll_summary <- poll_data %>%
     male_pct = mean(`Can you please tell me your gender? Male`, na.rm = TRUE),
     non_binary_other_pct = mean(`Can you please tell me your gender? Nonbinary or other`, na.rm = TRUE),
     caucasian_pct = mean(`For statistical purposes only, can you please tell me your ethnicity? White or Caucasian`, na.rm = TRUE),
-    minority_pct = 100 - caucasian_pct,
-    age_young_pct = mean(`What is your age range? 18-29 years`, na.rm = TRUE) + 
-                    mean(`What is your age range? 30-39 years`, na.rm = TRUE) + 
-                    mean(`What is your age range? 40-49 years`, na.rm = TRUE),
-    older_pct = mean(`What is your age range? 50-59 years`, na.rm = TRUE) + 
-                mean(`What is your age range? 60-69 years`, na.rm = TRUE) + 
-                mean(`What is your age range? 70 or more years`, na.rm = TRUE)
+    minority_pct = 100 - caucasian_pct
   ) %>%
   mutate(across(everything(), ~ replace_na(., 0))) %>%  # Replace NA values with 0
   mutate(across(where(is.numeric), ~ round(., 1)))  # Round to nearest tenth
@@ -113,15 +86,17 @@ poll_summary <- poll_data %>%
 colnames(poll_summary) <- c("State", "Democrat Pct", "Republican Pct", 
                             "High Educated", "Low Educated", "Female", 
                             "Male", "Nonbinary", "Caucasian", 
-                            "Minority Ethnicity", "Young Age", "Older Age")
+                            "Minority Ethnicity")
+
 poll_summary_party <- poll_summary %>%
   select(State, `Democrat Pct`, `Republican Pct`)
 
 poll_summary_demographics <- poll_summary %>%
   select(State, `High Educated`, `Low Educated`, `Female`, 
          `Male`, `Nonbinary`, `Caucasian`, 
-         `Minority Ethnicity`, `Young Age`, `Older Age`)
+         `Minority Ethnicity`)
 
+# Table for party percentages
 kable(poll_summary_party) %>%
   kable_styling(font_size = 10, position = "center", full_width = FALSE)
 
@@ -130,8 +105,12 @@ kable(poll_summary_demographics) %>%
   kable_styling(font_size = 6, position = "center", full_width = FALSE)
 
 ```
-\newpage  
-## Measurement
+We sourced the "Presidential General Election Polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and performed an in-depth analysis using the statistical programming language R [@citeR].
+
+Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary provides a snapshot of these findings.
+
+
+## Measurement  
 For this analysis, we selected Emerson as our primary pollster. The rationale behind this choice is explained in detail in @sec-appenA. Emerson’s polls provided essential details, including polling date ranges, party affiliations, sample sizes, and the percentage breakdown of support for different political parties.
 
 We focused on analyzing voter preferences based on party affiliation rather than individual candidate support, as this was more relevant to predicting overall trends. By capturing the broader party dynamics, our model aims to forecast how states are likely to swing in future elections, especially with respect to swing states. This focus will be elaborated in our results section, @sec-results.
@@ -166,14 +145,187 @@ ggplot(poll_summary, aes(x = party_diff, y = reorder(state, party_diff))) +
   theme(axis.text.y = element_text(size = 6))  
 
 ```
+```{r}
+#| label: fig-party-extremes
+#| fig-cap: Demographic Differences Between Top Red and Blue States
+#| echo: false
+#| warning: false
+#| message: false
 
-By visualizing the difference between Democratic and Republican preferences across states, we are able to pinpoint which states are firmly partisan and which fall closer to the center, indicating their potential to swing either way in future elections.
+library(tidyverse)
 
-## Predictor variables
+# Prepare the poll_summary data frame
+poll_summary <- poll_data %>%
+  mutate(party_diff = democrat_pct - republican_pct) %>%
+  select(-c(2, 3, 4, 6, 7, 8, 9, 11)) %>%  # Remove specific columns by index
+  select(-contains('Mode')) %>%             # Remove columns containing 'Mode' in their names
+  select(-contains('registration')) %>%     # Remove columns containing 'registration' in their names
+  drop_na()                                 # Remove rows with any NA values
 
-Next, we take a deeper dive into the various demographic and social factors that influence voter preferences. The predictors we consider include education levels, gender, ethnicity, and age group. These variables are crucial as they shape political preferences and are likely to influence which way a state leans politically.
+# Function to identify top N blue and N red states
+identify_top_states <- function(data, n) {
+  data %>%
+    mutate(party_diff = democrat_pct - republican_pct) %>%
+    arrange(desc(party_diff)) %>%
+    summarise(
+      blue_states = list(state[1:n]),  # Use 'n' instead of hardcoding 4
+      red_states = list(state[(nrow(data) - n + 1):nrow(data)])
+    )
+}
 
-In @fig-predictors-party-pct, we explore how these factors correlate with party lean across the U.S. states. For instance, higher levels of education may correlate with a greater likelihood of supporting the Democratic party, while other demographic factors such as ethnicity and age may play different roles in shaping political affiliation. This analysis helps us to identify which factors have the greatest influence in each state, offering a clearer understanding of what drives the electorate.
+# Function to compute mean differences for all numeric variables
+compute_mean_differences <- function(data, blue_states, red_states) {
+  # Select numeric variables excluding 'state' and 'party_diff'
+  numeric_vars <- data %>%
+    select(-state, -party_diff) %>%
+    select(where(is.numeric)) %>%
+    names()
+  
+  # Compute means for blue states
+  blue_means <- data %>%
+    filter(state %in% blue_states) %>%
+    summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
+  
+  # Compute means for red states
+  red_means <- data %>%
+    filter(state %in% red_states) %>%
+    summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
+  
+  # Compute absolute differences
+  diff_df <- tibble(
+    Variable = numeric_vars,
+    Blue_Mean = as.numeric(blue_means[1, ]),
+    Red_Mean = as.numeric(red_means[1, ]),
+    Abs_Difference = abs(as.numeric(blue_means[1, ]) - as.numeric(red_means[1, ]))
+  )
+  
+  # Remove variables where both means are NA
+  diff_df <- diff_df %>%
+    filter(!is.na(Blue_Mean) & !is.na(Red_Mean))
+  
+  diff_df
+}
+
+# Function to prepare data for plotting
+prepare_plot_data <- function(diff_df, top_n = 6) {
+  # Get top N variables with the largest differences
+  top_diff_vars <- diff_df %>%
+    arrange(desc(Abs_Difference)) %>%
+    slice(1:top_n)
+  
+  # Prepare data for plotting
+  plot_data <- top_diff_vars %>%
+    select(Variable, Blue_Mean, Red_Mean) %>%
+    pivot_longer(
+      cols = c("Blue_Mean", "Red_Mean"), 
+      names_to = "Group", 
+      values_to = "Mean"
+    ) %>%
+    mutate(Group = recode(Group, "Blue_Mean" = "Blue States", "Red_Mean" = "Red States"))
+  
+  plot_data
+}
+
+# Function to create the plot with y-axis from 0 to 100 and data labels
+create_comparison_plot <- function(plot_data) {
+  ggplot(plot_data, aes(
+    x = reorder(Variable, -Mean), 
+    y = Mean, 
+    fill = Group, 
+    label = round(Mean, 1)
+  )) +
+    geom_col(position = position_dodge(width = 0.9)) +
+    geom_text(
+      position = position_dodge(width = 0.9), 
+      vjust = -0.3, 
+      size = 3
+    ) +
+    scale_fill_manual(
+      values = c("Blue States" = "red", "Red States" = "blue")  # Reversed colors
+    ) +
+    labs(
+      title = "Demographic Differences Between Top Red and Blue States",
+      x = "Demographic Variable",
+      y = "Mean Percentage",
+      fill = "State Group"
+    ) +
+    scale_y_continuous(limits = c(0, 100)) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 4)
+    )
+}
+
+# Main analysis function
+analyze_state_differences <- function(data, top_n_states = 1, top_n_vars = 6) {
+  top_states <- identify_top_states(data, n = top_n_states)
+  
+  diff_df <- compute_mean_differences(
+    data, 
+    blue_states = top_states$blue_states[[1]], 
+    red_states = top_states$red_states[[1]]
+  )
+  
+  plot_data <- prepare_plot_data(diff_df, top_n = top_n_vars)
+  
+  plot <- create_comparison_plot(plot_data)
+  
+  list(
+    plot = plot,
+    top_variables = diff_df %>% arrange(desc(Abs_Difference)) %>% slice(1:top_n_vars)
+  )
+}
+
+# Ensure 'state' column exists in poll_summary
+if (!"state" %in% colnames(poll_summary)) {
+  stop("The 'state' column does not exist in poll_summary.")
+}
+
+# Run the analysis
+analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 6)
+
+# Display the plot
+analysis_results$plot
+
+```
+Beyond identifying swing states, it's also important to understand the differences in demographics between the most strongly Democratic ("blue") and Republican ("red") states. The bar graph in @fig-party-extremes takes a closer look at these differences. It focuses on key factors that show the biggest contrasts between Democratic-leaning and Republican-leaning states, helping to highlight how these factors differ between the most extreme red and blue states.  
+
+The @fig-party-extremes visualization provides insight into how people's responses to polls may influence their political preferences. This extra layer of analysis helps clarify the factors shaping the political leanings of different states and adds depth to our understanding of the electorate. In this case, we examine people's opinions on the current president and their voting choices in past elections.  
+
+Through these visualizations, we not only identify which states are most likely to swing in future elections but also gain a deeper understanding of the public's opinions that contribute to these partisan divides.  
+   
+## Predictor variables  
+
+Next, we take a deeper dive into the various demographic and social factors that influence voter preferences. The predictors we consider include education levels, gender, ethnicity, and age group. These variables are crucial as they shape political preferences and are likely to influence which way a state leans politically.  
+```{r}
+#| label: updating-predictors
+#| echo: false
+
+column_refs <- list(
+  democrat = "democrat_pct",
+  republican = "republican_pct",
+  highly_educated = "What is the highest level of education you have attained? College graduate",
+  lower_educated = "What is the highest level of education you have attained? High school or less",
+  female = "Can you please tell me your gender? Female",
+  male = "Can you please tell me your gender? Male",
+  non_binary_other = "Can you please tell me your gender? Nonbinary or other",
+  caucasian = "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  hispanic_latino = "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  vote_trump = "Who did you vote for in the 2020 election? Donald Trump",
+  vote_biden = "Who did you vote for in the 2020 election? Joe Biden",
+  biden_approve = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
+  biden_disapprove = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove",
+  young_age_18_29 = "What is your age range? 18-29 years",
+  young_age_30_39 = "What is your age range? 30-39 years",
+  young_age_40_49 = "What is your age range? 40-49 years",
+  older_age_50_59 = "What is your age range? 50-59 years",
+  older_age_60_69 = "What is your age range? 60-69 years",
+  older_age_70_more = "What is your age range? 70 or more years"
+)
+```
+
+
+In @fig-predictors-party-pct, we explore how these factors correlate with party lean across the U.S. states. For instance, higher levels of education may correlate with a greater likelihood of supporting the Democratic party, while other demographic factors such as ethnicity and age may play different roles in shaping political affiliation. This analysis helps us to identify which factors have the greatest influence in each state, offering a clearer understanding of what drives the electorate.  
 
 ```{r}
 #| label: fig-predictors-party-pct
@@ -192,13 +344,7 @@ poll_summary <- poll_data %>%
     male_pct = round(mean(.data[[column_refs$male]], na.rm = TRUE), 1),
     non_binary_other_pct = round(mean(.data[[column_refs$non_binary_other]], na.rm = TRUE), 1),
     caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
-    minority_pct = round(100 - caucasian_pct, 1),
-    age_young_pct = round(mean(.data[[column_refs$young_age_18_29]], na.rm = TRUE) + 
-                          mean(.data[[column_refs$young_age_30_39]], na.rm = TRUE) + 
-                          mean(.data[[column_refs$young_age_40_49]], na.rm = TRUE), 1),
-    older_pct = round(mean(.data[[column_refs$older_age_50_59]], na.rm = TRUE) + 
-                      mean(.data[[column_refs$older_age_60_69]], na.rm = TRUE) + 
-                      mean(.data[[column_refs$older_age_70_more]], na.rm = TRUE), 1)
+    minority_pct = round(100 - caucasian_pct, 1)
   ) %>%
   mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
   drop_na()
@@ -214,9 +360,8 @@ corr_data <- poll_summary %>%
     Male = male_pct,
     NonBinary = non_binary_other_pct,
     Caucasian = caucasian_pct,
-    Minority = minority_pct,
-    YoungAge = age_young_pct,
-    OlderAge = older_pct
+    Minority = minority_pct
+    # No age-related columns included anymore
   )
 
 # Calculate the correlation matrix
@@ -239,14 +384,126 @@ ggcorrplot(cor_matrix,
     axis.text = element_text(size = 1),  # Axis text size
     legend.text = element_text(size = 10),  # Legend text size
     legend.title = element_text(size = 10),  # Legend title size
-    axis.title = element_text(size = 1),  # Axis labels size
+    axis.title = element_text(size = 1)  # Axis labels size
+  )
+```
+  
+```{r}
+#| label: fig-predictors-party-pct-2
+#| fig-cap: Example Voting and Approval Predictor Variable Visualization
+#| echo: false
+
+# Calculate poll_summary with rounding to the nearest tenth
+poll_summary_2 <- poll_data %>%
+  group_by(state) %>%
+  summarise(
+    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1),
+    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
+    vote_trump_pct = round(mean(.data[[column_refs$vote_trump]], na.rm = TRUE), 1),
+    vote_biden_pct = round(mean(.data[[column_refs$vote_biden]], na.rm = TRUE), 1),
+    biden_approve_pct = round(mean(.data[[column_refs$biden_approve]], na.rm = TRUE), 1),
+    biden_disapprove_pct = round(mean(.data[[column_refs$biden_disapprove]], na.rm = TRUE), 1)
+  ) %>%
+  mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
+  drop_na()
+
+# Select relevant numeric columns for correlation matrix, excluding PartyDifference
+corr_data_2 <- poll_summary_2 %>%
+  select(
+    Democrat = dem_total_pct,
+    Republican = rep_total_pct,
+    VotedTrump2020 = vote_trump_pct,
+    VotedBiden2020 = vote_biden_pct,
+    ApprovesOfBiden = biden_approve_pct,
+    DisapprovesOfBiden = biden_disapprove_pct
   )
 
+# Calculate the correlation matrix
+cor_matrix_2 <- cor(corr_data_2, use = "complete.obs")
+
+# Set correlations less than -0.9 to NA
+cor_matrix_2[cor_matrix_2 < -0.9] <- NA
+
+# Visualize the correlation matrix without hierarchical clustering
+ggcorrplot(cor_matrix_2, 
+           hc.order = FALSE,  
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 2,  # Size for correlation labels
+           title = "Correlation Matrix of Voting Preferences and State Lean",
+           colors = c("blue", "white", "red"),  
+           legend.title = "Correlation") +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5),  # Title size and centered
+    axis.text = element_text(size = 1),  # Axis text size
+    legend.text = element_text(size = 10),  # Legend text size
+    legend.title = element_text(size = 10),  # Legend title size
+    axis.title = element_text(size = 1)  # Axis labels size
+  )
+
+```   
+
+```{r}
+#| label: fig-predictors-education-race-voting
+#| fig-cap: Correlation Matrix of Education, Race, and Past Voting Behavior
+#| echo: false
+
+# Calculate poll_summary with rounding to the nearest tenth
+poll_summary_3 <- poll_data %>%
+  group_by(state) %>%
+  summarise(
+    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1),
+    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
+    highly_educated_pct = round(mean(.data[[column_refs$highly_educated]], na.rm = TRUE), 1),
+    lower_educated_pct = round(mean(.data[[column_refs$lower_educated]], na.rm = TRUE), 1),
+    caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
+    minority_pct = round(100 - caucasian_pct, 1),
+    vote_trump_pct = round(mean(.data[[column_refs$vote_trump]], na.rm = TRUE), 1),
+    vote_biden_pct = round(mean(.data[[column_refs$vote_biden]], na.rm = TRUE), 1)
+  ) %>%
+  mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
+  drop_na()
+
+# Select relevant numeric columns for correlation matrix, excluding PartyDifference
+corr_data_3 <- poll_summary_3 %>%
+  select(
+    Democrat = dem_total_pct,
+    Republican = rep_total_pct,
+    HighlyEducated = highly_educated_pct,
+    LowerEducated = lower_educated_pct,
+    Caucasian = caucasian_pct,
+    Minority = minority_pct,
+    VotedTrump2020 = vote_trump_pct,
+    VotedBiden2020 = vote_biden_pct
+  )
+
+# Calculate the correlation matrix
+cor_matrix_3 <- cor(corr_data_3, use = "complete.obs")
+
+# Set correlations less than -0.9 to NA
+cor_matrix_3[cor_matrix_3 < -0.85] <- NA
+
+# Visualize the correlation matrix without hierarchical clustering
+ggcorrplot(cor_matrix_3, 
+           hc.order = FALSE,  
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 2,  # Size for correlation labels
+           title = "Correlation Matrix of Education, Race, and Past Voting Behavior",
+           colors = c("blue", "white", "red"),  
+           legend.title = "Correlation") +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5),  # Title size and centered
+    axis.text = element_text(size = 1),  # Axis text size
+    legend.text = element_text(size = 10),  # Legend text size
+    legend.title = element_text(size = 10),  # Legend title size
+    axis.title = element_text(size = 1)  # Axis labels size
+  )
 
 ```
-The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.
+The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.  
 
-This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.
+This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.  
 
 # Pollster Methodology Overview (Appendix A) {#sec-appenA}  
 Append a detailed review of a chosen pollster's methodology, survey techniques, strengths, and weaknesses.
