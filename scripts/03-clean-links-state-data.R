@@ -10,7 +10,7 @@
 library(tidyverse)
 
 # Load the poll links data
-poll_links_data <- read_csv("data/02-analysis_data/survey_list_data.csv")
+poll_links_data <- read_csv("data/02-analysis_data/pollster_data/emerson_list_data.csv")
 
 #### Pivot for URL crosstabs ####
 url_pivot <- poll_links_data %>%
@@ -43,6 +43,6 @@ new_poll_data_clean <- new_poll_data_clean %>%
   select(where(~ any(!is.na(.)))) 
 
 #### Save the cleaned dataset ####
-write_csv(new_poll_data_clean, "data/02-analysis_data/processed_poll_data.csv")
+write_csv(new_poll_data_clean, "data/02-analysis_data/pollster_data/pollster_link_data.csv")
 
 

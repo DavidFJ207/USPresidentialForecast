@@ -25,7 +25,8 @@ library(lubridate)
 library(ggplot2)
 library(ggcorrplot)
 library(kableExtra)
-
+library(arrow)
+library(zoo)
 ```
 
 
@@ -55,8 +56,10 @@ The remainder of this paper is structured as follows. @sec-data....
 #| message: false
 
 set.seed(754)
-poll_data <- read_csv(here::here(
-  "data/02-analysis_data/organized_state_poll_data.csv"))
+poll_data <- read_parquet(here::here(
+  "data/02-analysis_data/summarized_state_poll_data.parquet"))
+time_data <- read_parquet(here::here(
+  "data/02-analysis_data/timeline_data.parquet"))
 
 ```
 
@@ -241,7 +244,7 @@ create_comparison_plot <- function(plot_data) {
       size = 3
     ) +
     scale_fill_manual(
-      values = c("Blue States" = "red", "Red States" = "blue")  # Reversed colors
+      values = c("Blue States" = "blue", "Red States" = "red")
     ) +
     labs(
       title = "Demographic Differences Between Top Red and Blue States",
@@ -252,7 +255,7 @@ create_comparison_plot <- function(plot_data) {
     scale_y_continuous(limits = c(0, 100)) +
     theme_minimal() +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 4)
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 7)
     )
 }
 
@@ -282,7 +285,7 @@ if (!"state" %in% colnames(poll_summary)) {
 }
 
 # Run the analysis
-analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 6)
+analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 5)
 
 # Display the plot
 analysis_results$plot
@@ -315,12 +318,6 @@ column_refs <- list(
   vote_biden = "Who did you vote for in the 2020 election? Joe Biden",
   biden_approve = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
   biden_disapprove = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove",
-  young_age_18_29 = "What is your age range? 18-29 years",
-  young_age_30_39 = "What is your age range? 30-39 years",
-  young_age_40_49 = "What is your age range? 40-49 years",
-  older_age_50_59 = "What is your age range? 50-59 years",
-  older_age_60_69 = "What is your age range? 60-69 years",
-  older_age_70_more = "What is your age range? 70 or more years"
 )
 ```
 
@@ -503,6 +500,59 @@ ggcorrplot(cor_matrix_3,
 ```
 The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.  
 
+```{r}
+# Convert `end_date` to Date format and ensure numeric columns
+time_data <- time_data %>%
+  mutate(end_date = as.Date(end_date, format = "%m/%d/%y"),
+         pct = as.numeric(pct), 
+         `Do you approve or disapprove of the job Joe Biden is doing as President? Approve` = 
+           as.numeric(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`))
+
+# Apply a 14-day rolling average (increase smoothing) to each group
+time_data <- time_data %>%
+  group_by(party) %>%
+  mutate(pct_smooth = rollapply(pct, width = 7, FUN = mean, align = "right", fill = NA)) %>%
+  ungroup() %>%
+  mutate(biden_approval_smooth = rollapply(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`, 
+                                           width = 7, FUN = mean, align = "right", fill = NA))
+
+# Separate data for Democrats, Republicans, and Biden Approval
+# Filter data for Democrats where state is NA
+democrat_data <- time_data %>%
+  filter(party == "DEM" & is.na(state))
+
+# Filter data for Republicans where state is NA
+republican_data <- time_data %>%
+  filter(party == "REP" & is.na(state))
+
+biden_approval <- time_data %>%
+  filter(is.na(state)) %>%
+  select(end_date, biden_approval_smooth)
+
+# Create the time plot with ggplot2
+ggplot() +
+  # Plot Democrats' smoothed pct over time (blue)
+  geom_line(data = democrat_data, aes(x = end_date, y = pct_smooth, color = "Democrats"), size = 1) +
+  
+  # Plot Republicans' smoothed pct over time (red)
+  geom_line(data = republican_data, aes(x = end_date, y = pct_smooth, color = "Republicans"), size = 1) +
+  
+  # Plot Biden's smoothed Approval over time (green)
+  geom_line(data = biden_approval, aes(x = end_date, y = biden_approval_smooth, color = "Biden Approval"), size = 1) +
+  
+  # Customize labels, theme, colors, and y-axis limits
+  labs(title = "Democrat vs. Republican and Biden Approval Over Time (Smoothed)",
+       x = "Date",
+       y = "Percentage (%)",
+       color = "Legend") +
+  scale_color_manual(values = c("Democrats" = "blue", "Republicans" = "red", "Biden Approval" = "lightblue")) +
+  ylim(25, 55) + # Set y-axis range from 25 to 55
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
 This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.  
 
 # Pollster Methodology Overview (Appendix A) {#sec-appenA}  
