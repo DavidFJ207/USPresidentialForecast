@@ -25,7 +25,10 @@ state_data <- read_csv("data/02-analysis_data/pollster_data/pollster_link_data.c
 is_google_sheet_link <- function(text) {
   grepl("docs.google.com/spreadsheets", text)
 }
-
+# Function to check if a string is an Excel file link
+is_excel_link <- function(text) {
+  grepl("\\.xlsx$|\\.xls$|view.officeapps.live.com/op/view.aspx\\?src=.*\\.xlsx", text)
+}
 # Function to download and read a Google Sheet
 download_and_read_google_sheet <- function(url) {
   # Download the file from the Google Sheets URL
@@ -363,15 +366,50 @@ write_parquet(updated_dataset, "data/02-analysis_data/summarized_state_poll_data
 #### Create Timeline Dataset ####
 
 # Load main dataset
-state_data <- data
+state_data <- filtered_data 
 
-# Initialize an empty data frame for timeline_data
-timeline_data <- data.frame(state = character(),
-                            start_date = character(),
-                            end_date = character(),
-                            party = character(),
-                            pct = numeric(),
-                            stringsAsFactors = FALSE)
+# Create an empty data frame with placeholder column names
+timeline_data <- data.frame(
+  state = character(),
+  start_date = character(),
+  end_date = character(),
+  party = character(),
+  pct = numeric(),
+  college_grad = numeric(),
+  high_school_or_less = numeric(),
+  female = numeric(),
+  male = numeric(),
+  non_binary = numeric(),
+  caucasian = numeric(),
+  hispanic_latino = numeric(),
+  vote_trump = numeric(),
+  vote_biden = numeric(),
+  biden_approve = numeric(),
+  biden_disapprove = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Rename the columns to the exact strings required
+names(timeline_data) <- c(
+  "state",
+  "start_date",
+  "end_date",
+  "party",
+  "pct",
+  "What is the highest level of education you have attained? College graduate",
+  "What is the highest level of education you have attained? High school or less",
+  "Can you please tell me your gender? Female",
+  "Can you please tell me your gender? Male",
+  "Can you please tell me your gender? Nonbinary or other",
+  "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  "Who did you vote for in the 2020 election? Donald Trump",
+  "Who did you vote for in the 2020 election? Joe Biden",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
+)
+
+
 
 # Iterate through each row in state_data
 for (i in seq_len(nrow(state_data))) {
@@ -428,6 +466,5 @@ for (i in seq_len(nrow(state_data))) {
     })
   }
 }
-
 write_parquet(timeline_data, "data/02-analysis_data/timeline_data.parquet")
 write_csv(timeline_data, "data/02-analysis_data/timeline_data.csv")

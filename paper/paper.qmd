@@ -117,12 +117,12 @@ For this analysis, we selected Emerson as our primary pollster. The rationale be
 
 We focused on analyzing voter preferences based on party affiliation rather than individual candidate support, as this was more relevant to predicting overall trends. By capturing the broader party dynamics, our model aims to forecast how states are likely to swing in future elections, especially with respect to swing states. This focus will be elaborated in our results section, @sec-results.
 
-Additionally, the Emerson dataset included critical demographic data, such as respondents' political preferences, motivations for voting in the 2024 election, opinions on Donald Trump’s legal battles, and perspectives on major political figures and issues. These details, coupled with information on party affiliation, sources of political news, and other personal attributes, allowed us to paint a richer picture of the voting landscape.
+Additionally, the Emerson dataset included critical demographic data, voting history, and approval ratings. 
 
 To ensure uniformity across all states, we concentrated on questions that were consistently asked across the entire dataset. This enabled us to perform state-level aggregation and analysis without being limited by state-specific polling questions, ensuring a standardized approach across the board.
 
 ## Outcome variables
-The initial analysis of the dataset revealed some key trends in party preferences across different states. In @fig-party-results, we illustrate which states exhibit the strongest leanings toward either the Democratic or Republican party. This visualization plays a crucial role in identifying the pivotal swing states that lie close to the center of the graph. These swing states, which show near-equal support for both parties, are of particular interest for future election predictions, as they are likely to determine the overall election outcome.
+The initial analysis of the dataset revealed some key trends in party preferences across different states. In @fig-party-results, we illustrate which states exhibit the strongest leanings toward either the Democratic or Republican party. This visualization plays a crucial role in identifying the pivotal swing states that lie close to the center of the graph. These swing states, which show near-equal support for both parties, are of particular interest for future election predictions, as they are likely to determine the overall election outcome.From this table, we will use the 8 states in the middle to determine the winner of the 2024 election. These states include michigan, georgia, Nevada, Minnesota, new hamshire, wisconsin, pensevalynia, and arizona. We also have a national average, which will also be looked at our prediction. 
 
 ```{r}
 #| label: fig-party-results
@@ -243,7 +243,7 @@ create_comparison_plot <- function(plot_data) {
       size = 1
     ) +
     scale_fill_manual(
-      values = c("Blue States" = "blue", "Red States" = "red")
+      values = c("Blue State" = "blue", "Red State" = "red")
     ) +
     labs(
       title = "Demographic Differences Between Top Red and Blue States",
@@ -284,21 +284,21 @@ if (!"state" %in% colnames(poll_summary)) {
 }
 
 # Run the analysis
-analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 5)
+analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 6)
 
 # Display the plot
 analysis_results$plot
 
 ```
-Beyond identifying swing states, it's also important to understand the differences in demographics between the most strongly Democratic ("blue") and Republican ("red") states. The bar graph in @fig-party-extremes takes a closer look at these differences. It focuses on key factors that show the biggest contrasts between Democratic-leaning and Republican-leaning states, helping to highlight how these factors differ between the most extreme red and blue states.  
+Beyond identifying swing states, it's also important to understand the differences between the most strongly Democratic ("blue") and Republican ("red") states. The bar graph in @fig-party-extremes takes a closer look at these differences. It focuses on key factors that show the biggest contrasts between Democratic-leaning and Republican-leaning states, helping to highlight how these factors differ between the most extreme red and blue states. To begin, we can see that for reference, we have two bars showing democratic points and republican points. You can see the questions asked by Emerson Pollster regarding who'd they vote for, and you can see that their opinion almost matches the pct given for that state.
 
-The @fig-party-extremes visualization provides insight into how people's responses to polls may influence their political preferences. This extra layer of analysis helps clarify the factors shaping the political leanings of different states and adds depth to our understanding of the electorate. In this case, we examine people's opinions on the current president and their voting choices in past elections.  
+The @fig-party-extremes visualization provides insight into how people's responses to polls may influence their political preferences.
 
 Through these visualizations, we not only identify which states are most likely to swing in future elections but also gain a deeper understanding of the public's opinions that contribute to these partisan divides.  
    
 ## Predictor variables  
 
-Next, we take a deeper dive into the various demographic and social factors that influence voter preferences. The predictors we consider include education levels, gender, ethnicity, and age group. These variables are crucial as they shape political preferences and are likely to influence which way a state leans politically.  
+Next, we take a deeper dive into the various demographic and social factors that influence voter preferences. The predictors we consider include education levels, gender, and past voting behaviour. These variables are crucial as they shape political preferences and are likely to influence which way a state leans politically.  
 ```{r}
 #| label: updating-predictors
 #| echo: false
@@ -324,7 +324,7 @@ column_refs <- list(
 ```
 
 
-In @fig-predictors-party-pct, we explore how these factors correlate with party lean across the U.S. states. For instance, higher levels of education may correlate with a greater likelihood of supporting the Democratic party, while other demographic factors such as ethnicity and age may play different roles in shaping political affiliation. This analysis helps us to identify which factors have the greatest influence in each state, offering a clearer understanding of what drives the electorate.  
+In @fig-predictors-party-pct, we explore how these factors correlate with party lean across the U.S. states. This analysis helps us to identify which factors have the greatest influence in each state, offering a clearer understanding of what drives the electorate.  
 
 ```{r}
 #| label: fig-predictors-party-pct
@@ -500,7 +500,7 @@ ggcorrplot(cor_matrix_3,
   )
 
 ```
-The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.  
+The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender—are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support. Some key observations is that higher education tends to have a higher correlation with voting democrat and negative for Republican, and lower education supports trump more in 2020. Minority groups tend to lean democratic while causian/white tend to support trump. Previous voter behaviour also shows that biden supporters, are still democratic voters, while trump supporters remain dissaproving of biden. Lastly, there is a slight leaning towards democrats from women compared to men where they usually lean to republican.
 
 ```{r}
 # Convert `end_date` to Date format and ensure numeric columns
@@ -550,7 +550,7 @@ ggplot() +
   geom_line(data = republican_data, aes(x = end_date, y = pct_smooth, color = "Republicans"), size = 1) +
   
   # Plot Biden's smoothed Approval over time (green)
-  geom_line(data = biden_approval, aes(x = end_date, y = biden_approval_smooth, color = "Biden Approval"), size = 1) +
+  geom_line(data = biden_approval, aes(x = end_date, y = biden_approval_smooth, color = "Biden Approval"), size = 1) +geom_vline(xintercept = as.Date("2024-07-21"), color = "red", linetype = "dashed") +
   
   # Customize labels, theme, colors, and y-axis limits
   labs(title = "Democrat vs. Republican and Biden Approval Over Time (Smoothed)",
@@ -565,7 +565,7 @@ ggplot() +
 
 
 ```
-This analysis offers valuable insights into how specific demographic factors shape the political landscape in different states, allowing us to better predict electoral outcomes based on shifting demographic trends.  
+Lastly, we look at democratic and replican points and bidens approval over time and a line at july 21st when joe biden ended @globalnews2024. It can be see this perioud, democratic support was low and increased due to this change. Using insights into how specific demographic factors, previous voting behaaviour, we will predict the 2024 election. 
 
 # Pollster Methodology Overview (Appendix A) {#sec-appenA}  
 Append a detailed review of a chosen pollster's methodology, survey techniques, strengths, and weaknesses.
@@ -573,7 +573,7 @@ Append a detailed review of a chosen pollster's methodology, survey techniques, 
 # Model {#sec-model}
 
 ## Model Development
-The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election.
+The goal of our model is to forecast the likely vote outcome of 8 swing states for the 2024 US presidential election.
 
 *Person B:* Choose a linear or generalized linear model. Justify the selection based on your research goal and data structure.
 

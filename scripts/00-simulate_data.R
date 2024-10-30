@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Simulates a dataset of American electoral polling data summary
+# Purpose: Simulates a dataset of American electoral polling data summary with trends across dates
 # Author: Gadiel David Flores
 # Date: 07 October 2024
 # Contact: davidgadiel.flores@mail.utoronto.ca
@@ -15,51 +15,64 @@ set.seed(853)
 
 #### Simulate data ####
 
-# Helper function to generate random percentages for responses that add up to 100%
-generate_percentages <- function(n) {
-  p <- runif(n)
-  return(round(p / sum(p) * 100, 2))  # Normalize to sum to 100% and round to 2 decimal places
+# Helper function to simulate a linear trend over dates
+generate_trend <- function(start, end, n) {
+  return(seq(start, end, length.out = n))
 }
 
-# Simulate data
+# Define states and dates for each entry
 states <- c("California", "Texas", "Florida", "New York", "Pennsylvania", "Illinois", "Ohio", "Georgia", "North Carolina", "Michigan")
+dates <- as.Date(c("2024-01-15", "2024-05-15", "2024-09-15"))  # Specific dates
+n_dates <- length(dates)  # Number of date points
 
-# Simulate percentages for each response type outside the data.frame
-Joe_Biden_Approval_Approve <- generate_percentages(10)
-Joe_Biden_Approval_Disapprove <- 100 - Joe_Biden_Approval_Approve
+# Expand the dataset to include each state for each date
+analysis_data <- expand.grid(State = states, Date = dates, stringsAsFactors = FALSE)
 
-Presidential_Choice_Harris <- generate_percentages(10)
-Presidential_Choice_Trump <- 100 - Presidential_Choice_Harris
+# Simulate percentages for each response type with trends
+analysis_data <- analysis_data %>%
+  mutate(
+    # Trend: Increase Trump choice over time from 45% to 55%
+    Presidential_Choice_Trump = rep(generate_trend(45, 55, n_dates), each = length(states)) + rnorm(nrow(analysis_data), 0, 1),
+    # Trend: Decrease Harris choice complement to Trump choice
+    Presidential_Choice_Harris = 100 - Presidential_Choice_Trump,
+    
+    # Trend: Biden's disapproval increases from 50% to 60%
+    Joe_Biden_Approval_Disapprove = rep(generate_trend(50, 60, n_dates), each = length(states)) + rnorm(nrow(analysis_data), 0, 1),
+    # Biden's approval is complementary to disapproval
+    Joe_Biden_Approval_Approve = 100 - Joe_Biden_Approval_Disapprove,
+    
+    # Trend: Perceived safety becomes less safe, decreasing from 40% to 30%
+    Safety_Concerns_More_Safe = rep(generate_trend(40, 30, n_dates), each = length(states)) + rnorm(nrow(analysis_data), 0, 1),
+    Safety_Concerns_Less_Safe = 100 - Safety_Concerns_More_Safe,
+    
+    # Trend: Economic situation worsens from 40% better to 30% better
+    Economic_Situation_Better = rep(generate_trend(40, 30, n_dates), each = length(states)) + rnorm(nrow(analysis_data), 0, 1),
+    Economic_Situation_Worse = 100 - Economic_Situation_Better,
+    
+    # Consistent past voting behavior
+    Past_Voting_Behavior_Biden = 52 + rnorm(nrow(analysis_data), 0, 1),
+    Past_Voting_Behavior_Trump = 100 - Past_Voting_Behavior_Biden,
+    
+    # Consistent ethnicity distribution (Hispanic ~15%, White ~60%)
+    Ethnicity_Hispanic = 15 + rnorm(nrow(analysis_data), 0, 0.5),
+    Ethnicity_White = 60 + rnorm(nrow(analysis_data), 0, 0.5)
+  )
 
-Safety_Concerns_More_Safe <- generate_percentages(10)
-Safety_Concerns_Less_Safe <- 100 - Safety_Concerns_More_Safe
+# Ensure percentage limits are respected by trimming values outside 0-100 range
+analysis_data <- analysis_data %>%
+  mutate(
+    across(starts_with("Joe_Biden_Approval"), ~ pmin(pmax(., 0), 100)),
+    across(starts_with("Presidential_Choice"), ~ pmin(pmax(., 0), 100)),
+    across(starts_with("Safety_Concerns"), ~ pmin(pmax(., 0), 100)),
+    across(starts_with("Economic_Situation"), ~ pmin(pmax(., 0), 100)),
+    Past_Voting_Behavior_Biden = pmin(pmax(Past_Voting_Behavior_Biden, 0), 100),
+    Past_Voting_Behavior_Trump = pmin(pmax(Past_Voting_Behavior_Trump, 0), 100),
+    Ethnicity_Hispanic = pmin(pmax(Ethnicity_Hispanic, 0), 100),
+    Ethnicity_White = pmin(pmax(Ethnicity_White, 0), 100)
+  )
 
-Economic_Situation_Better <- generate_percentages(10)
-Economic_Situation_Worse <- 100 - Economic_Situation_Better
-
-Past_Voting_Behavior_Biden <- generate_percentages(10)
-Past_Voting_Behavior_Trump <- 100 - Past_Voting_Behavior_Biden
-
-Ethnicity_Hispanic <- generate_percentages(10)
-Ethnicity_White <- 100 - Ethnicity_Hispanic
-
-# Create the dataset by including the simulated data
-analysis_data <- data.frame(
-  State = states,  # No replacement to ensure unique states
-  Joe_Biden_Approval_Approve = Joe_Biden_Approval_Approve,
-  Joe_Biden_Approval_Disapprove = Joe_Biden_Approval_Disapprove,
-  Presidential_Choice_Harris = Presidential_Choice_Harris,
-  Presidential_Choice_Trump = Presidential_Choice_Trump,
-  Safety_Concerns_More_Safe = Safety_Concerns_More_Safe,
-  Safety_Concerns_Less_Safe = Safety_Concerns_Less_Safe,
-  Economic_Situation_Better = Economic_Situation_Better,
-  Economic_Situation_Worse = Economic_Situation_Worse,
-  Past_Voting_Behavior_Biden = Past_Voting_Behavior_Biden,
-  Past_Voting_Behavior_Trump = Past_Voting_Behavior_Trump,
-  Ethnicity_Hispanic = Ethnicity_Hispanic,
-  Ethnicity_White = Ethnicity_White
-)
 
 #### Save data ####
 write_csv(analysis_data, "data/00-simulated_data/simulated_poll_data.csv")
+
 
