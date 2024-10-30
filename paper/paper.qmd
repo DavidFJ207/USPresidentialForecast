@@ -47,7 +47,6 @@ The remainder of this paper is structured as follows. @sec-data....
 
 \newpage  
 # Data {#sec-data}  
-
 ## Overview  
 
 ```{r}
@@ -241,7 +240,7 @@ create_comparison_plot <- function(plot_data) {
     geom_text(
       position = position_dodge(width = 0.9), 
       vjust = -0.3, 
-      size = 3
+      size = 1
     ) +
     scale_fill_manual(
       values = c("Blue States" = "blue", "Red States" = "red")
@@ -255,7 +254,7 @@ create_comparison_plot <- function(plot_data) {
     scale_y_continuous(limits = c(0, 100)) +
     theme_minimal() +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 7)
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 4)
     )
 }
 
@@ -318,6 +317,9 @@ column_refs <- list(
   vote_biden = "Who did you vote for in the 2020 election? Joe Biden",
   biden_approve = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
   biden_disapprove = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove",
+  previous_vote_trump ="Who did you vote for in the 2020 election? Donald Trump",
+  previous_vote_joe ="Who did you vote for in the 2020 election? Joe Biden"
+
 )
 ```
 
@@ -508,26 +510,36 @@ time_data <- time_data %>%
          `Do you approve or disapprove of the job Joe Biden is doing as President? Approve` = 
            as.numeric(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`))
 
-# Apply a 14-day rolling average (increase smoothing) to each group
+# Average entries for the same date and party, then apply a 14-day rolling average for smoothing
 time_data <- time_data %>%
-  group_by(party) %>%
-  mutate(pct_smooth = rollapply(pct, width = 7, FUN = mean, align = "right", fill = NA)) %>%
+  group_by(end_date, party) %>%
+  summarise(
+    pct = mean(pct, na.rm = TRUE),
+    biden_approval = mean(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`, na.rm = TRUE)
+  ) %>%
   ungroup() %>%
-  mutate(biden_approval_smooth = rollapply(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`, 
-                                           width = 7, FUN = mean, align = "right", fill = NA))
+  group_by(party) %>%
+  mutate(
+    pct_smooth = rollapply(pct, width = 6, FUN = mean, align = "right", fill = NA)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    biden_approval_smooth = rollapply(biden_approval, width = 26, FUN = mean, align = "right", fill = NA)
+  )
 
 # Separate data for Democrats, Republicans, and Biden Approval
 # Filter data for Democrats where state is NA
 democrat_data <- time_data %>%
-  filter(party == "DEM" & is.na(state))
+  filter(party == "DEM")
 
 # Filter data for Republicans where state is NA
 republican_data <- time_data %>%
-  filter(party == "REP" & is.na(state))
+  filter(party == "REP")
 
 biden_approval <- time_data %>%
-  filter(is.na(state)) %>%
-  select(end_date, biden_approval_smooth)
+  filter(party == "DEM" | party == "REP") %>%
+  select(end_date, biden_approval_smooth) %>%
+  distinct()
 
 # Create the time plot with ggplot2
 ggplot() +
