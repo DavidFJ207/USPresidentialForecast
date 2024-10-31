@@ -1,117 +1,133 @@
 #### Preamble ####
-# Purpose: Models voting patterns based on poll data
+# Purpose: Model voting patterns based on poll data for Democrat and Republican voters
 # Author: Gadiel David Flores
 # Date: 27 October 2024
 # Contact: davidgadiel.flores@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: summarized_state_poll_data.parquet should be available in the data directory
 
 #### Workspace setup ####
 library(here)
 library(arrow)
 library(dplyr)
-library(brms)
-library(caret)
-library(pROC)
-library(glmnet)
+library(brms)     
 
 # Data Import
-analysis_data1 <- read_parquet(here::here("data/02-analysis_data/summarized_state_poll_data.parquet"))
-analysis_data2 <- read_parquet(here::here("data/02-analysis_data/timeline_data.parquet"))
+analysis_data <- read_parquet(here::here("data/02-analysis_data/timeline_data.parquet"))
 
-#### Define Predictors and Target Variable ####
+#### Model Setup for Democrat Voters ####
 
-# Column references provided
-column_refs <- list(
-  democrat_pct = "democrat_pct",
-  republican_pct = "republican_pct",
-  highly_educated = "What is the highest level of education you have attained? College graduate",
-  lower_educated = "What is the highest level of education you have attained? High school or less",
-  female = "Can you please tell me your gender? Female",
-  male = "Can you please tell me your gender? Male",
-  non_binary_other = "Can you please tell me your gender? Nonbinary or other",
-  caucasian = "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
-  hispanic_latino = "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
-  vote_trump = "Who did you vote for in the 2020 election? Donald Trump",
-  vote_biden = "Who did you vote for in the 2020 election? Joe Biden",
-  biden_approve = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
-  biden_disapprove = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove",
-  previous_vote_trump = "Who did you vote for in the 2020 election? Donald Trump",
-  previous_vote_joe = "Who did you vote for in the 2020 election? Joe Biden"
+# Define column references 
+predictor_columns <- c(
+  "What is the highest level of education you have attained? College graduate",
+  "What is the highest level of education you have attained? High school or less",
+  "Can you please tell me your gender? Female",
+  "Can you please tell me your gender? Male",
+  "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  "Who did you vote for in the 2020 election? Donald Trump",
+  "Who did you vote for in the 2020 election? Joe Biden",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
 )
 
-# Unlist column references to get a vector of column names
-predictor_columns <- unlist(column_refs)
+# Filter analysis_data to only include rows where party is DEM
+analysis_data_dem <- analysis_data %>% filter(party == "DEM")
 
-# Ensure all required columns are present
-missing_columns <- setdiff(predictor_columns, names(analysis_data1))
-if (length(missing_columns) > 0) {
-  stop("The following required columns are missing in the dataset: ", paste(missing_columns, collapse = ", "))
-}
+# Rename columns for modeling compatibility
+names(analysis_data_dem) <- make.names(names(analysis_data_dem))
+predictor_columns <- make.names(predictor_columns)
 
-# Define the target variable
-analysis_data1 <- analysis_data1 %>%
+# Scale `pct` to be within (0, 1)
+epsilon <- 1e-6
+analysis_data_dem <- analysis_data_dem %>%
   mutate(
-    democratic_win = ifelse(democrat_pct > republican_pct, 1, 0)
+    pct_scaled = (pct / 100) * (1 - 2 * epsilon) + epsilon
   )
 
-#### Adjust Biden's Approval Ratings ####
-biden_weight <- 0.5  # Adjust this value as needed
-analysis_data1 <- analysis_data1 %>%
-  mutate(
-    `Do you approve or disapprove of the job Joe Biden is doing as President? Approve` = 
-      `Do you approve or disapprove of the job Joe Biden is doing as President? Approve` * biden_weight,
-    `Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove` = 
-      `Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove` * biden_weight
-  )
+# Ensure all predictor columns are numeric and drop rows with NA
+model_data_dem <- analysis_data_dem %>%
+  select(all_of(c("pct_scaled", predictor_columns))) %>%
+  mutate(across(everything(), as.numeric)) %>%
+  na.omit()
 
-#### Prepare Data for Modeling ####
-model_data <- analysis_data1 %>%
-  select(all_of(predictor_columns), democratic_win) %>%
-  mutate(across(everything(), as.numeric))
+### Specify and Fit the Democrat Model ###
 
-if (any(is.na(model_data))) {
-  model_data <- na.omit(model_data)
-}
+# Create the formula
+predictor_formula <- paste(predictor_columns, collapse = " + ")
+formula <- as.formula(paste("pct_scaled ~", predictor_formula))
 
-# Standardize column names to remove spaces and special characters
-colnames(model_data) <- gsub("[^[:alnum:]_]", "_", colnames(model_data))
-predictor_columns <- colnames(model_data)[colnames(model_data) %in% predictor_columns]
+# Set priors with specific priors for `Who did you vote for...` columns
+priors <- c(
+  prior(normal(0, 5), class = "b"),
+  prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Donald.Trump"),
+  prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Joe.Biden"),
+  prior(beta(1, 1), class = "phi")  # Prior for precision parameter
+)
 
-# Define the model formula
-formula <- as.formula(paste("democratic_win ~", paste(predictor_columns, collapse = " + ")))
-
-# Specify priors (you can adjust these based on prior knowledge)
-priors <- set_prior("normal(0, 10)", class = "b")
-
-#### Fit the Bayesian Logistic Regression Model ####
-first_model <- brm(
+# Fit the Democrat Model
+dem_model <- brm(
   formula = formula,
-  data = model_data,
-  family = bernoulli(link = "logit"),
+  data = model_data_dem,
+  family = Beta(),
   prior = priors,
   chains = 4,
-  iter = 2000,
-  warmup = 1000,
-  cores = 2,
-  seed = 123
+  iter = 6000,
+  warmup = 2000,
+  cores = 4,
+  seed = 123,
+  control = list(adapt_delta = 0.99999, max_treedepth = 20)
 )
 
-#### Model Diagnostics and Summary ####
-print(summary(first_model))
-plot(first_model)
-pp_check(first_model)
+### Save the Democrat Model ###
 
-#### Save the Model ####
-
-# Create the 'models' directory if it doesn't exist
 if (!dir.exists("models")) {
   dir.create("models")
 }
 
 saveRDS(
-  first_model,
-  file = "models/bayesian_model.rds"
+  dem_model,
+  file = "models/bayesian_model_dem.rds"
 )
 
+#### Model Setup for Republican Voters ####
 
+# Filter analysis_data to only include rows where party is REP
+analysis_data_rep <- analysis_data %>% filter(party == "REP")
+
+# Rename columns for modeling compatibility
+names(analysis_data_rep) <- make.names(names(analysis_data_rep))
+
+# Scale `pct` to be within (0, 1)
+analysis_data_rep <- analysis_data_rep %>%
+  mutate(
+    pct_scaled = (pct / 100) * (1 - 2 * epsilon) + epsilon
+  )
+
+# Ensure all predictor columns are numeric and drop rows with NA
+model_data_rep <- analysis_data_rep %>%
+  select(all_of(c("pct_scaled", predictor_columns))) %>%
+  mutate(across(everything(), as.numeric)) %>%
+  na.omit()
+
+### Specify and Fit the Republican Model ###
+
+# Fit the Republican Model
+rep_model <- brm(
+  formula = formula,
+  data = model_data_rep,
+  family = Beta(),
+  prior = priors,
+  chains = 4,
+  iter = 6000,
+  warmup = 2000,
+  cores = 4,
+  seed = 123,
+  control = list(adapt_delta = 0.99999, max_treedepth = 20)
+)
+
+### Save the Republican Model ###
+
+saveRDS(
+  rep_model,
+  file = "models/bayesian_model_rep.rds"
+)

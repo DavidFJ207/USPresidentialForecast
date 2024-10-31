@@ -364,33 +364,10 @@ updated_dataset <- updated_dataset %>%
 write_parquet(updated_dataset, "data/02-analysis_data/summarized_state_poll_data.parquet")
 
 #### Create Timeline Dataset ####
-
 # Load main dataset
 state_data <- filtered_data 
-
-# Create an empty data frame with placeholder column names
-timeline_data <- data.frame(
-  state = character(),
-  start_date = character(),
-  end_date = character(),
-  party = character(),
-  pct = numeric(),
-  college_grad = numeric(),
-  high_school_or_less = numeric(),
-  female = numeric(),
-  male = numeric(),
-  non_binary = numeric(),
-  caucasian = numeric(),
-  hispanic_latino = numeric(),
-  vote_trump = numeric(),
-  vote_biden = numeric(),
-  biden_approve = numeric(),
-  biden_disapprove = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Rename the columns to the exact strings required
-names(timeline_data) <- c(
+# Define the required column names
+column_names <- c(
   "state",
   "start_date",
   "end_date",
@@ -409,62 +386,56 @@ names(timeline_data) <- c(
   "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
 )
 
+# Initialize timeline_data with the required column names and set check.names = FALSE to preserve names
+timeline_data <- data.frame(matrix(ncol = length(column_names), nrow = 0), check.names = FALSE)
+colnames(timeline_data) <- column_names
 
-
-# Iterate through each row in state_data
+# Iterate through each row of `state_data`
 for (i in seq_len(nrow(state_data))) {
-  # Extract state information and url link
-  state_value <- as.character(state_data$state[i])
-  start_date <- as.character(state_data$start_date[i])
-  end_date <- as.character(state_data$end_date[i])
-  party <- as.character(state_data$party[i])
-  pct <- as.numeric(state_data$pct[i])
-  link <- as.character(state_data$url_crosstab[i])
   
-  # Check if the link is not NA
+  # Initialize a new row with NA values for each column in `timeline_data`
+  new_row <- setNames(as.list(rep(NA, length(column_names))), column_names)
+  
+  # Populate basic fields from `state_data`
+  new_row$state <- as.character(state_data$state[i])
+  new_row$start_date <- as.character(state_data$start_date[i])
+  new_row$end_date <- as.character(state_data$end_date[i])
+  new_row$party <- as.character(state_data$party[i])
+  new_row$pct <- as.numeric(state_data$pct[i])
+  
+  # Process link if `url_crosstab` is available
+  link <- as.character(state_data$url_crosstab[i])
   if (!is.na(link)) {
-    # Define a placeholder for processed data
-    processed_data <- NULL
-    
-    # Determine the type of link and process accordingly
-    tryCatch({
+    # Extract responses from Google Sheets or Excel based on the link type
+    processed_data <- tryCatch({
       if (is_google_sheet_link(link)) {
-        # Process Google Sheets link
-        processed_data <- process_google_sheet(link, output_path = NULL)
+        process_google_sheet(link, output_path = NULL)
       } else if (is_excel_link(link)) {
-        # Process Excel file link
-        processed_data <- process_excel_sheet(link, output_path = NULL)
-      }
-      
-      # If processed_data is obtained, append it to timeline_data
-      if (!is.null(processed_data)) {
-        # Loop through rows of processed data
-        for (j in seq_len(nrow(processed_data))) {
-          # Identify the question and response
-          question <- as.character(processed_data[j, 1])
-          response <- as.character(processed_data[j, 3])
-          
-          # Check if the question is in the list of target questions
-          if (question %in% colnames(timeline_data)) {
-            # Create a new row with the data to append
-            new_row <- data.frame(state = state_value,
-                                  start_date = start_date,
-                                  end_date = end_date,
-                                  party = party,
-                                  pct = pct,
-                                  stringsAsFactors = FALSE)
-            new_row[[question]] <- response  # Add the response to the question column
-            
-            # Append the new row to timeline_data
-            timeline_data <- rbind(timeline_data, new_row)
-          }
-        }
+        process_excel_sheet(link, output_path = NULL)
+      } else {
+        NULL
       }
     }, error = function(e) {
-      # Handle errors and continue the loop
       message(paste("Error processing link:", link, "-", e$message))
+      NULL
     })
+    
+    # Populate responses into `new_row` if `processed_data` exists
+    if (!is.null(processed_data)) {
+      for (j in seq_len(nrow(processed_data))) {
+        question <- as.character(processed_data[j, 1])
+        response <- as.character(processed_data[j, 3])
+        
+        # Check if the question matches a column in `timeline_data`
+        if (question %in% colnames(timeline_data)) {
+          new_row[[question]] <- round(as.numeric(response), 1)
+        }
+      }
+    }
   }
+  
+  # Append `new_row` as a row to `timeline_data`
+  timeline_data <- rbind(timeline_data, as.data.frame(new_row, stringsAsFactors = FALSE, check.names = FALSE))
 }
+
 write_parquet(timeline_data, "data/02-analysis_data/timeline_data.parquet")
-write_csv(timeline_data, "data/02-analysis_data/timeline_data.csv")
