@@ -8,23 +8,27 @@
 # Pre-requisites: Need to cleaned poll data
 # Any other information needed? Intall googledrive and googleAuthR
 
-# Authenticate your Google account
-gs4_auth()
-
 #### Load Libraries and files ####
 library(googledrive)
 library(readxl)
 library(tidyverse)
 library(dplyr)
-state_data <- read_csv("data/02-analysis_data/processed_poll_data.csv")
-mega_dataset_combined <- read_csv("data/02-analysis_data/mega_dataset.csv")
+library(dplyr)
+library(lubridate)
+library(readr)
+library(janitor)
+library(arrow)
+state_data <- read_csv("data/02-analysis_data/pollster_data/pollster_link_data.csv")
 #### Helper Functions ####
 
 # Function to check if a string is a Google Sheets link
 is_google_sheet_link <- function(text) {
   grepl("docs.google.com/spreadsheets", text)
 }
-
+# Function to check if a string is an Excel file link
+is_excel_link <- function(text) {
+  grepl("\\.xlsx$|\\.xls$|view.officeapps.live.com/op/view.aspx\\?src=.*\\.xlsx", text)
+}
 # Function to download and read a Google Sheet
 download_and_read_google_sheet <- function(url) {
   # Download the file from the Google Sheets URL
@@ -156,6 +160,38 @@ process_excel_sheet <- function(excel_url, output_path) {
 }
 #### Create final dataset ####
 
+# First, process the mega dataset from state_data to populate mega_dataset_combined
+mega_dataset <- list()
+
+# Iterate through the entire state_data dataframe
+for (i in seq_len(nrow(state_data))) {
+  for (j in seq_len(ncol(state_data))) {
+    cell_value <- as.character(state_data[i, j])  # Get the cell value as a string
+    
+    # Check if the cell contains a Google Sheets link
+    if (!is.na(cell_value) && is_google_sheet_link(cell_value)) {
+      
+      # Process the Google Sheet link
+      tryCatch({
+        processed_data <- process_google_sheet(cell_value, output_path = NULL)  # Use your process_google_sheet function
+        
+        # Append the processed data to the mega dataset
+        mega_dataset <- append(mega_dataset, list(processed_data))
+      }, error = function(e) {
+        # Handle errors if any occur during the process (e.g., invalid link)
+        message(paste("Error processing link:", cell_value, e))
+      })
+    }
+  }
+}
+
+# Combine all data frames in mega_dataset into one
+mega_dataset_combined <- bind_rows(mega_dataset)
+
+# Save the combined dataset to a CSV file
+write_csv(mega_dataset_combined, "data/02-analysis_data/pollster_data/questions_dataset.csv")
+
+#### Continue with item counts ####
 item_counts <- table(mega_dataset_combined[[1]])
 # Convert the table to a dataframe
 item_counts_df <- as.data.frame(item_counts)
@@ -165,7 +201,7 @@ colnames(item_counts_df) <- c("Item", "Count")
 item_counts_filtered <- item_counts_df %>%
   filter(Count >= 49)
 
-# create dataset with correct headers
+# Create dataset with correct headers
 item_list <- as.character(item_counts_filtered$Item)
 state_survey_data <- data.frame(matrix(ncol = length(item_list) + 1, nrow = 0))
 colnames(state_survey_data) <- c("state", item_list)
@@ -175,6 +211,7 @@ state_data$state <- as.character(state_data$state)
 
 # Now append the state column from state_data to state_survey_data
 state_survey_data <- bind_rows(state_survey_data, data.frame(state = state_data$state))
+
 #### Loop to append data ####
 # Iterate through the entire state_data dataframe
 for (i in seq_len(nrow(state_data))) {
@@ -243,43 +280,12 @@ for (i in seq_len(nrow(state_data))) {
   }
 }
 
-write_csv(state_survey_data, "data/02-analysis_data/summarized_state_poll_data.csv")
-#### State Dataset ####
-mega_dataset <- list()
-
-# Iterate through the entire state_data dataframe
-for (i in seq_len(nrow(state_data))) {
-  for (j in seq_len(ncol(state_data))) {
-    cell_value <- as.character(state_data[i, j])  # Get the cell value as a string
-    
-    # Check if the cell contains a Google Sheets link
-    if (!is.na(cell_value) && is_google_sheet_link(cell_value)) {
-      
-      # Process the Google Sheet link
-      tryCatch({
-        processed_data <- process_google_sheet(cell_value, output_path = NULL)  # Use your process_google_sheet function
-        
-        # Append the processed data to the mega dataset
-        mega_dataset <- append(mega_dataset, list(processed_data))
-      }, error = function(e) {
-        # Handle errors if any occur during the process (e.g., invalid link)
-        message(paste("Error processing link:", cell_value, e))
-      })
-    }
-  }
-}
-
-# Combine all data frames in mega_dataset into one
-mega_dataset_combined <- bind_rows(mega_dataset)
-# Save the dataset to a CSV file
-write_csv(mega_dataset_combined, "data/02-analysis_data/mega_dataset.csv")
 
 #### Organize and delete Cleaned Dataset ####
-state_polls <- read_csv("data/02-analysis_data/summarized_state_poll_data.csv")
+state_polls <- state_survey_data
 # Delete totals of states
 state_polls <- state_polls %>%
   select(-matches(".*Total$"))
-
 
 # Change the value in cell 1 to "National"
 state_polls[1, 1] <- "National"
@@ -288,6 +294,148 @@ state_polls[1, 1] <- "National"
 state_polls_clean <- state_polls %>%
   select(where(~ sum(is.na(.)) <= 25))
 
+#### Merge datasets ####
+# Read and clean the data
+data <- read_csv("data/02-analysis_data/pollster_data/emerson_list_data.csv") |>
+  clean_names()
 
-# Save CSV file
-write_csv(state_polls_clean, "data/02-analysis_data/non_missing_state_poll_data.csv")
+# Clean the data (treat NA state as National, convert dates to date format)
+cleaned_data <- data |>
+  mutate(
+    state = if_else(is.na(state), "National", state), # Treat NA as National
+    end_date = mdy(end_date), # Convert end_date to date format
+    start_date = mdy(start_date) # Convert start_date to date format if needed
+  ) |>
+  mutate(
+    num_respondents = round((pct / 100) * sample_size, 0) # Convert percentage to number (applies to any candidate)
+  )
+
+# Filter to include only Democrats (DEM) and Republicans (REP)
+filtered_data <- cleaned_data |>
+  filter(party %in% c("DEM", "REP"))
+
+# Extract relevant information for each unique state and party combination
+state_summary <- filtered_data |>
+  group_by(state, party) |>
+  filter(end_date == max(end_date, na.rm = TRUE)) |>
+  summarize(
+    start_date = min(start_date, na.rm = TRUE), # Earliest start date for each state and party
+    end_date = max(end_date, na.rm = TRUE), # Latest end date for each state and party
+    total_sample_size = sum(sample_size, na.rm = TRUE), # Total sample size for each state and party
+    pct = first(pct), # Use the pct value associated with the latest entry
+    num_respondents = sum(num_respondents, na.rm = TRUE) # Sum of number of respondents for each state and party
+  ) |>
+  ungroup()
+
+# Read existing cleaned dataset
+cleaned_dataset <- state_polls_clean
+
+# Create separate columns for Democrats and Republicans
+pivoted_data <- state_summary %>%
+  select(state, party, start_date, end_date, total_sample_size, pct, num_respondents) %>%
+  pivot_wider(
+    names_from = party,
+    values_from = c(start_date, end_date, total_sample_size, pct, num_respondents),
+    names_glue = "{.value}_{party}"
+  ) %>%
+  rename(
+    democrat_start_date = start_date_DEM,
+    democrat_end_date = end_date_DEM,
+    democrat_total_sample_size = total_sample_size_DEM,
+    democrat_pct = pct_DEM,
+    democrat_num_respondents = num_respondents_DEM,
+    
+    republican_start_date = start_date_REP,
+    republican_end_date = end_date_REP,
+    republican_total_sample_size = total_sample_size_REP,
+    republican_pct = pct_REP,
+    republican_num_respondents = num_respondents_REP
+  )
+
+# Join data with cleaned dataset
+updated_dataset <- cleaned_dataset %>%
+  left_join(pivoted_data, by = "state")
+
+# Reorder the columns
+updated_dataset <- updated_dataset %>%
+  select(state, starts_with("democrat"), starts_with("republican"), everything())
+
+# Save dataset
+write_parquet(updated_dataset, "data/02-analysis_data/summarized_state_poll_data.parquet")
+
+#### Create Timeline Dataset ####
+# Load main dataset
+state_data <- filtered_data 
+# Define the required column names
+column_names <- c(
+  "state",
+  "start_date",
+  "end_date",
+  "party",
+  "pct",
+  "What is the highest level of education you have attained? College graduate",
+  "What is the highest level of education you have attained? High school or less",
+  "Can you please tell me your gender? Female",
+  "Can you please tell me your gender? Male",
+  "Can you please tell me your gender? Nonbinary or other",
+  "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  "Who did you vote for in the 2020 election? Donald Trump",
+  "Who did you vote for in the 2020 election? Joe Biden",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
+  "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
+)
+
+# Initialize timeline_data with the required column names and set check.names = FALSE to preserve names
+timeline_data <- data.frame(matrix(ncol = length(column_names), nrow = 0), check.names = FALSE)
+colnames(timeline_data) <- column_names
+
+# Iterate through each row of `state_data`
+for (i in seq_len(nrow(state_data))) {
+  
+  # Initialize a new row with NA values for each column in `timeline_data`
+  new_row <- setNames(as.list(rep(NA, length(column_names))), column_names)
+  
+  # Populate basic fields from `state_data`
+  new_row$state <- as.character(state_data$state[i])
+  new_row$start_date <- as.character(state_data$start_date[i])
+  new_row$end_date <- as.character(state_data$end_date[i])
+  new_row$party <- as.character(state_data$party[i])
+  new_row$pct <- as.numeric(state_data$pct[i])
+  
+  # Process link if `url_crosstab` is available
+  link <- as.character(state_data$url_crosstab[i])
+  if (!is.na(link)) {
+    # Extract responses from Google Sheets or Excel based on the link type
+    processed_data <- tryCatch({
+      if (is_google_sheet_link(link)) {
+        process_google_sheet(link, output_path = NULL)
+      } else if (is_excel_link(link)) {
+        process_excel_sheet(link, output_path = NULL)
+      } else {
+        NULL
+      }
+    }, error = function(e) {
+      message(paste("Error processing link:", link, "-", e$message))
+      NULL
+    })
+    
+    # Populate responses into `new_row` if `processed_data` exists
+    if (!is.null(processed_data)) {
+      for (j in seq_len(nrow(processed_data))) {
+        question <- as.character(processed_data[j, 1])
+        response <- as.character(processed_data[j, 3])
+        
+        # Check if the question matches a column in `timeline_data`
+        if (question %in% colnames(timeline_data)) {
+          new_row[[question]] <- round(as.numeric(response), 1)
+        }
+      }
+    }
+  }
+  
+  # Append `new_row` as a row to `timeline_data`
+  timeline_data <- rbind(timeline_data, as.data.frame(new_row, stringsAsFactors = FALSE, check.names = FALSE))
+}
+
+write_parquet(timeline_data, "data/02-analysis_data/timeline_data.parquet")

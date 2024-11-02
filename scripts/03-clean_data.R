@@ -54,4 +54,4 @@ cleaned_data <- cleaned_data %>%
   filter(pollster == smallest_ratio_pollster)
 
 #### Save data ####
-write_csv(cleaned_data, "data/02-analysis_data/survey_list_data.csv")
+write_csv(cleaned_data, "data/02-analysis_data/pollster_data/emerson_list_data.csv")
