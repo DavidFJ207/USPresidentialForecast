@@ -44,19 +44,10 @@ library(brms)
 The remainder of this paper is structured as follows: Section 2 details the data and measurement process; Section 3 covers model development and results; Section 4 discusses implications and future steps.
 The remainder of this paper is structured as follows. @sec-data....
 
-<<<<<<< HEAD
-# Data {#sec-data}
 
-## Overview
+# Data {#sec-data} 
+## Overview 
 We sourced the "Presidential General Election Polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and performed an in-depth analysis using the statistical programming language R [@citeR].
-
-Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary provides a snapshot of these findings.
-=======
-
-\newpage  
-# Data {#sec-data}  
-## Overview  
->>>>>>> new-branch-name
 
 ```{r}
 #| echo: false
@@ -70,6 +61,8 @@ time_data <- read_parquet(here::here(
   "data/02-analysis_data/timeline_data.parquet"))
 
 ```
+
+Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary-1 and @fig-predictors-pct-summary-2 provides a snapshot of these findings.
 
 ```{r}
 #| label: fig-predictors-pct-summary
@@ -136,10 +129,6 @@ kable(poll_summary_demographics) %>%
   kable_styling(font_size = 6, position = "center", full_width = FALSE)
 
 ```
-
-We sourced the "Presidential General Election Polls" dataset from FiveThirtyEight [@FiveThirtyEight2024] and analyzed it using the statistical programming language R [@citeR].
-
-Our main goal was to clean, organize, and analyze U.S. presidential election polling data to understand voter preferences by state. We selected data from credible pollsters, sorted it by state, and resolved missing or incomplete entries. Where necessary, we merged additional datasets, ensuring that we carefully handled any gaps in the data. The result was a refined dataset ready for analysis. The table below provides a summary of polling data by state, showing voter preferences by party and various demographics. It highlights key trends and differences across states, focusing on party leanings and demographic splits, as illustrated in @fig-predictors-pct-summary.
 
 ## Measurement  
 We chose Emerson as our primary pollster, and the reasoning for this is detailed in @sec-appenA. Emerson's polls offered crucial information, such as polling dates, party affiliations, sample sizes, and the percentage of support for each political party.
@@ -600,11 +589,6 @@ ggcorrplot(cor_matrix_3,
   )
 
 ```
-<<<<<<< HEAD
-The correlation matrix in @fig-predictors-party-pct provides a detailed look at how various predictors are related to party preferences. From this, we can see which predictors—such as education or gender- are more strongly associated with Democratic or Republican leanings. The blue shading indicates stronger correlations with Democratic support, while red represents stronger correlations with Republican support.
-=======
->>>>>>> new-branch-name
-
 The correlation matrix in @fig-predictors-party-pct shows how different predictors relate to party preferences. We can see which factors, like education or gender, are more strongly tied to Democratic or Republican leanings. Blue shading indicates stronger Democratic support, while red shows stronger Republican support. Key observations include higher education being linked to Democratic support and lower education favoring Trump in 2020. Minority groups generally lean Democratic, while Caucasian/White voters tend to support Trump. Past voter behavior shows Biden supporters remain Democratic, and Trump supporters disapprove of Biden. Additionally, women lean slightly more Democratic compared to men, who often lean Republican.
 
 ```{r}
@@ -675,15 +659,9 @@ Key predictor variables:
 - **Priors (Past Voting Behavior)**: This looks at who people voted for in the past, helping us understand ongoing political support or disapproval.
 - **Biden's Approval Rating**: This assesses how approval or disapproval of Joe Biden impacts Democratic support, providing insight into shifting voter sentiments.
 
-# Pollster Methodology Overview (Appendix A) {#sec-appenA}  
-Append a detailed review of a chosen pollster's methodology, survey techniques, strengths, and weaknesses.
-
 # Model {#sec-model}
 ## Model Development
-<<<<<<< HEAD
-The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election, and we will choose the predictor variables based on the the correlation matrix we created previously (@fig-predictors-party-pct). Also, if we choose either the percentage of people who vote for Trump (representing the Republican Party) or Harris (representing the Democratic Party), that number being slightly below 50% does not necessarily means that the corresponding person will not be elected as the next President of the United States, since there is a percentage of people who choose to not vote. Therefore, our final choice is to construct two linear/generalized linear models, one for the percentage that Trump will become the next President and one for Harris respectively. One can then compare the two predicted percentage of people voting for the corresponding President to get the final prediction of who is more likely to be the next President of the United States.
-
-Now we will determine whether to choose generalized linear or linear model for each of the two models by checking the respective normalities of the response variables, which will be the percentage of people supporting the Republican party and the percentage of people supoporting the Democratic party respectively. The following @fig-hist-for-republican is the histogram of the Republican Party Supporting Rate, describing the distribution of the response variable for the first model.
+The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election, focusing specifically on eight swing states. We will choose the predictor variables based on the correlation matrix we created previously (@fig-predictors-party-pct). It is important to note that even if the percentage of people who vote for Trump (representing the Republican Party) or Harris (representing the Democratic Party) is slightly below 50%, this does not necessarily mean that the corresponding candidate will not be elected as the next President of the United States, given the percentage of people who choose not to vote. 
 
 ```{r}
 #| label: fig-hist-for-republican
@@ -704,7 +682,9 @@ ggplot(data = data_rep1, aes(x=rep_total_pct)) +
   labs(title = "Republic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
 
 ```
-And the following @fig-hist-for-democratic is the histogram of the Democratic Party Supporting Rate, describing the distribution of the response variable for the second model.
+
+The following @fig-hist-for-democratic is the histogram of the Democratic Party Supporting Rate, which describes the distribution of the response variable for the second model. Our final choice is to construct two generalized linear models: one for the percentage that Trump will become the next President and one for Harris. We can then compare the predicted percentages of people voting for each candidate to make a final prediction of who is more likely to be the next President of the United States.
+
 ```{r}
 #| label: fig-hist-for-democratic
 #| fig-cap: Distribution of Democratic Party Supporting Rate
@@ -724,9 +704,10 @@ ggplot(data = data_rep1, aes(x=dem_total_pct)) +
   labs(title = "Democratic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
 
 ```
-According to @fig-hist-for-democratic and @fig-hist-for-democratic, both response variables' distributions do not seem to be normal. The distribution of the variable democratic party supporting rate tends to be poisson, since most percentages have a similar frequency, with an outliar at around 67 to 68 percent. The distribution of the variable republic party supporting rate has a maximum frequency at the percentage of around 50 percent, but has similaer frequencies at around 25 to 26 percent and around 48 to 49 percent, which may indicate a violation of the normal distribution property. Therefore, since the response variables of both models are not normally-distributed, a generalized linear model, instead of a linear model, will be used for both models.
-=======
->>>>>>> new-branch-name
+
+To decide between using a generalized linear model or a linear model for each of the two models, we checked the normality of the response variables: the percentage of people supporting the Republican Party and the percentage supporting the Democratic Party. According to @fig-hist-for-democratic and @fig-hist-for-republican, the distributions of both response variables do not appear normal. The distribution of the Democratic Party Supporting Rate tends to resemble a Poisson distribution, with most percentages having a similar frequency and an outlier around 67-68 percent. The Republican Party Supporting Rate distribution has a maximum frequency around 50 percent, with similar frequencies around 25-26 percent and 48-49 percent, suggesting a potential violation of the normal distribution assumption. 
+
+Therefore, since the response variables are not normally distributed, we will use a generalized linear model for both models to better capture the characteristics of the data.
 
 The goal of our model is to forecast the likely vote outcome in 8 swing states for the 2024 US presidential election. This model will allow us to estimate the expected vote share for each candidate based on state-level characteristics and prior voting patterns, which are especially important in determining close elections.
 
@@ -849,7 +830,7 @@ Our results are summarized in @tbl-modelresults.
 
 ```{r}
 #| label: tbl-modelresults
-#| tbl-cap: "Forecasting model results based on poll data"
+#| tbl-cap: "Prediction Summary for Swing States with Declared Winner"
 #| echo: false
 #| warning: false
 #| message: false
@@ -857,29 +838,23 @@ Our results are summarized in @tbl-modelresults.
 # Modify the prediction summary
 prediction_summary <- prediction_summary %>%
   select(State, DEM_Mean, REP_Mean) %>%  # Keep only the mean columns
-  mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))  
+  mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))
+
 # Create a formatted table
 kable(
   prediction_summary,
-  caption = "Prediction Summary for Swing States with Declared Winner",
   col.names = c("State", "Democrat Points", "Republican Points", "Winner"),
   format = "latex", 
-  digits = 2
+  digits = 2,
+  escape = FALSE
 ) %>%
-  kable_styling(latex_options = c("striped", "hold_position", "condensed"), 
-                full_width = FALSE, 
-                font_size = 10)
-```
-*Person B*: Visualize the model's results and include any performance metrics (e.g., RMSE, test/train split).
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: ""
-#| warning: false
+  kable_styling(
+    latex_options = c("striped", "hold_position", "condensed"), 
+    full_width = FALSE, 
+    font_size = 10
+)
 
 ```
-
 
 # Discussion
 
