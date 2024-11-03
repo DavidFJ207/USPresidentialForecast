@@ -882,7 +882,7 @@ Weaknesses and next steps should also be included.
 
 # Appendix {-}
 
-## Appendix A: Pollster Methodology Overview
+## Appendix A: Pollster Methodology Overview {-}
 Emerson College Polling was initially a college polling exercise, and is now an "innovative, nationally-ranked" non-partisan polling center (@AboutUs). For the 2024 USA Presidential Election pollster, the Emerson College Polling defined the population to be "likely voters" of 2024 United States Presidential Election. Emerson College Polling does indicate that the targeted population of "likely voters" is based on "2024 Likely Voter Modeling." However, the methodology for this modelling and the specific model is not indicated, so the specific validity of the targeted population cannot be determine (@Polling).
 
 Emerson College Polling recruits people completing this survey for this national pollster by contacting mobile phones using "MMS-to-Online", "Online Opt-in Panel", and "IVR(Interactive Voice Response)" (@Polling). In the MMS-to-Online approach, the target population were sent text messages with graphics that invite them to take a "screening questionnaire", and those who pass the questionnaire can move on to take the survey. The selected respondents were based on "state voter files provided by Aristotle." The Online Opt-in Panel approach involves respondents from the targeted population being invited to finish the survey by means of an online opt-in panel "provided by CINT" (@AboutUs). Specifically, in the Online Panel approach, selected voters were pre-matched to "L2 voter file data provided by Rep Data" (@Polling). Finally, the IVR approach involves making automatic telephone calls to selected "likely voters." Participants then answer the survey using their "touch-tone telephone". The email approach indicated in Emerson College Polling's official methodology (@AboutUs) is not mentioned in the National Polling, so it can be assumed that this approach is not used in our chosen pollster data.
@@ -897,20 +897,20 @@ The questionnaire set by Emerson College Polling for this survey, based on the n
 
 Therefore, after analyzing the advantages and disadvantages of this pollster about the 2024 United States Presidential Elections by Emerson College Polling, we can conclude that Emerson College Polling can improve their pollster by implementing the following approaches. Emerson can consider increasing the sample size in order to make their survey more representative of the targeted population, explicitly describing their definition of the targeted population "likely voters" and the model used to determine characteristics of the targeted population. Emerson can also consider changing from simple random to stratified sampling, based on different states or other demographical features based on their targeted population model, making their sample more representative of the population, decrease the length of the questionnaire, and also explicitly explain their treatment of non-response, which will increase the validity of the study. Overall, this pollster is still highly valid, and generally reliable for predicting the 2024 United States Presidential Election.
 
-## Appendix B: Idealized Survey Design for $100K Budget
+## Appendix B: Idealized Survey Design for $100K Budget {-}
 
-## Introduction
+## Introduction {-}
 
 This appendix introduces an idealized methodology and survey to forecast the US presidential election with a budget of $100k. The goal is to use a sample survey that effectively captures public opinion and demographic characteristics.
 
 
-## Sampling Approach
+## Sampling Approach {-}
 
 In order to most accurately represent the sample population of US voters, we will be using a stratified random sampling approach. Stratified random sampling efficiently and fairly samples data from strata that are representative of a population compared to simple random sampling since it also reflects the population of interest’s underrepresented subgroups, ultimately reducing potential bias. 
 
 The sample population will be taken from 10,000 eligible US voters represented in strata divided into different demographic factors such as age, gender, race, education level, income level, and political affiliation. This sample size can provide a statistically significant confidence interval for the strata.
 
-## Respondent Recruitment 
+## Respondent Recruitment {-}
 
 We will be using 70% of our budget for respondent recruitment, and the remaining 30% for implementing the survey and validating results.
 
@@ -919,7 +919,7 @@ A proportion of our budget of $20,000 will be used for advertising on various so
 Since digital ads may result in higher dropout rates and lower response quality, the majority of our budget will be allocated to make up for this limitation. A budget of $40,000 can be used to hire professional survey panels that work with companies that can provide large databases of target respondents that have been pre-screened to match our demographic of interest. 
 Lastly, since pre-screened professional survey panels can introduce bias from being frequent survey responders, we will also use incentivized online survey platforms to recruit various participants that fit our demographics of interest. Participants will be offered small monetary incentives with our budget of $10,000, which can greatly increase completion rates and result in better response quality.
 
-## Data Validation
+## Data Validation {-}
 
 First, we need pre-screening questions to confirm the eligibility of respondents such as eligibility to vote to prevent bots and fake responses. For instance, asking whether they are a US citizen, and then asking if they are eligible to vote in the upcoming US presidential election. If their answers contradict these two questions, we know that their response lacks validity.
 
@@ -929,13 +929,13 @@ Furthermore, we want consistency checks that include similar questions which are
 
 Lastly, IP address monitoring can be used to prevent duplicate responses from the same person.
 
-## Poll Aggregation
+## Poll Aggregation {-}
 
 We can collect poll data from various reputable polling sources that have good pollster reliability and are from more recent polls. This way, we can weigh the polls according to their quality. For instance, we would assign higher weights to pollsters that have a high rate of pollster reliability based on past results. We would also give higher weights to more recent polls that better showcase the current opinions of the upcoming US election. Lastly, we would emphasize the weight of larger sample sizes since these provide more accurate representation of the population of interest. We can also incorporate the Bayesian Inference method when updating new polls to adjust prior distributions with new information.
 
 Survey Link: https://forms.gle/vm3gKbsMAZvzakFn8
 
-## Copy of Survey
+## Copy of Survey {-}
 
 ## Additional Data & Model Details
 Include any technical details on data cleaning, model diagnostics, and posterior checks.
