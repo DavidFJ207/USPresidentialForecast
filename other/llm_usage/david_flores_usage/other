@@ -160,3 +160,138 @@ Trim Values:
 
 Ensured all generated values stay within the valid percentage range of 0-100.
 This approach gives each state multiple entries on specific dates, with a clear trend over time for selected variables, while maintaining consistency for past voting behavior and ethnicity.
+
+David: 
+help me write R code to validate a dataset for an American Election analysis? Here's what I need:
+1. A section for loading the `tidyverse` package and reading in a CSV file called `simulated_poll_data.csv` using `read_csv()` from the `here` package.
+2. A test to ensure the data was loaded successfully.
+3. A check to make sure all column headers are unique.
+4. A test to verify that the `state` column contains only valid American state names, including a list of all 50 states plus 'National.'
+5. A check for any missing values in the entire dataset.
+6. A test to ensure the dataset has at least 5 columns.
+7. A validation to ensure every column contains at least one non-NA value.
+8. A check to ensure that all columns have consistent data types (no mixed types in a single column).
+9. A test to ensure the dataset has at least one row.
+10. A validation to make sure all numeric columns contain non-negative values.
+11. A check for any duplicate rows in the dataset.
+
+ChatGPT said:
+ChatGPT
+Here's the R code to perform the specified validations on your dataset:
+
+r
+Copy code
+#### Preamble ####
+# Purpose: Tests the structure and validity of the American Election dataset
+# Author: Your Name
+# Date: Today's Date
+# License: MIT
+# Pre-requisites: 
+# - The `tidyverse` and `here` packages must be installed and loaded
+
+#### Workspace setup ####
+library(tidyverse)
+library(here)
+
+# Load the dataset
+sim_data <- read_csv(here::here("data/00-simulated_data/simulated_poll_data.csv"))
+
+#### Test data ####
+
+# 1. Test if the data was successfully loaded
+if (exists("sim_data")) {
+  message("Test Passed: The dataset was successfully loaded.")
+} else {
+  stop("Test Failed: The dataset could not be loaded.")
+}
+
+# 2. Check if all column headers in 'sim_data' are unique
+if (length(unique(names(sim_data))) == length(names(sim_data))) {
+  message("Test Passed: All column headers in 'sim_data' are unique.")
+} else {
+  stop("Test Failed: There are duplicate column headers in 'sim_data'.")
+}
+
+# 3. Check if the 'state' column contains only valid American state names
+valid_states <- c(
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", 
+  "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", 
+  "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", 
+  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", 
+  "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", 
+  "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", 
+  "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", 
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", 
+  "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", 
+  "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", 
+  "National"
+)
+
+if ("state" %in% names(sim_data) && all(sim_data$state %in% valid_states)) {
+  message("Test Passed: The 'state' column contains only valid American state names.")
+} else {
+  stop("Test Failed: The 'state' column contains invalid state names or is missing.")
+}
+
+# 4. Check for any missing values in the entire dataset
+if (all(complete.cases(sim_data))) {
+  message("Test Passed: The dataset contains no missing values.")
+} else {
+  stop("Test Failed: The dataset contains missing values.")
+}
+
+# 5. Check if the dataset has at least 5 columns
+if (ncol(sim_data) >= 5) {
+  message("Test Passed: The dataset has at least 5 columns.")
+} else {
+  stop("Test Failed: The dataset has fewer than 5 columns.")
+}
+
+# 6. Validate that every column contains at least one non-NA value
+if (all(sapply(sim_data, function(x) any(!is.na(x))))) {
+  message("Test Passed: All columns contain at least one non-NA value.")
+} else {
+  stop("Test Failed: One or more columns are entirely NA.")
+}
+
+# 7. Check if all columns have consistent data types (no mixed types in the same column)
+if (all(sapply(sim_data, function(x) length(unique(sapply(x, class))) == 1))) {
+  message("Test Passed: All columns have consistent data types.")
+} else {
+  stop("Test Failed: One or more columns have mixed data types.")
+}
+
+# 8. Check if the dataset has at least one row
+if (nrow(sim_data) > 0) {
+  message("Test Passed: The dataset has at least one row.")
+} else {
+  stop("Test Failed: The dataset is empty.")
+}
+
+# 9. Validate that all numeric columns contain non-negative values
+if (all(sapply(sim_data, function(x) if (is.numeric(x)) all(x >= 0, na.rm = TRUE) else TRUE))) {
+  message("Test Passed: All numeric columns contain non-negative values.")
+} else {
+  stop("Test Failed: One or more numeric columns contain negative values.")
+}
+
+# 10. Check for any duplicate rows in the dataset
+if (nrow(sim_data) == nrow(distinct(sim_data))) {
+  message("Test Passed: There are no duplicate rows in the dataset.")
+} else {
+  stop("Test Failed: There are duplicate rows in the dataset.")
+}
+Explanation of the Code:
+Loading the Data: Uses read_csv() to load the data from the here package.
+Validation Tests:
+Existence Check: Verifies that sim_data was loaded successfully.
+Unique Column Headers: Ensures that column names are unique.
+State Column Check: Validates that the state column contains only valid American state names.
+Missing Values Check: Checks for any missing values in the dataset.
+Column Count Check: Confirms that the dataset has at least 5 columns.
+Non-NA Values: Ensures every column has at least one non-NA value.
+Consistent Data Types: Checks that each column has a consistent data type.
+Row Count Check: Makes sure the dataset has at least one row.
+Non-Negative Numeric Values: Validates that all numeric values are non-negative.
+Duplicate Rows Check: Identifies any duplicate rows in the dataset.
+Let me know if this meets your needs or if you'd like any modifications!

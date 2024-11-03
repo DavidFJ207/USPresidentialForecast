@@ -81,9 +81,10 @@ predictor_columns <- c(
   "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
   "Who did you vote for in the 2020 election? Donald Trump",
   "Who did you vote for in the 2020 election? Joe Biden",
-  "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
-  "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
+  "Although you are undecided, which candidate do you lean toward? Donald Trump",
+  "Although you are undecided, which candidate do you lean toward? Kamala Harris"
 )
+
 
 # Filter poll_data to include only the specified states
 poll_summary <- poll_data %>%
@@ -140,7 +141,8 @@ The Emerson dataset also included valuable demographic data, voting history, and
 ## Outcome Variables  
 Our initial analysis of the dataset revealed important trends in party preferences across states. In @fig-party-results, we show which states have the strongest leanings toward the Democratic or Republican parties. This visualization is crucial for identifying key swing states, which lie near the center of the graph and show nearly equal support for both parties. These states are especially important for predicting the 2024 election outcome. 
 
-From this analysis, we identified eight critical swing states: Michigan, Georgia, Nevada, North Carolina, New Hampshire, Wisconsin, Pennsylvania, and Arizona. These states will be central to our election prediction. Although Minnesota emerged as a potential swing state, we excluded it due to the wide range of polling data, as explained in @tbl-final-summary. Additionally, we will consider the national average in our overall prediction.
+From this analysis, we identified eight critical swing states: Georgia, Michigan, National, Nevada, New Hampshire, North Carolina, Pennsylvania, and Wisconsin. These states will be central to our election prediction. Although Minnesota emerged as a potential swing state, we excluded it due to the wide range of polling data, as explained in @tbl-final-summary. Additionally, we will consider the national average in our overall prediction.
+  
 ```{r}
 #| label: fig-party-results
 #| fig-cap: Example Predictor Variable Visualization
@@ -166,7 +168,7 @@ ggplot(poll_summary, aes(x = party_diff, y = reorder(state, party_diff))) +
   theme(axis.text.y = element_text(size = 6))  
 
 ```
-
+  
 ```{r}
 #| label: tbl-final-summary
 #| echo: false
@@ -187,7 +189,7 @@ dem_ci_summary <- dem_data %>%
     upper_95 = ifelse(n >= 2, mean_pct + qt(0.975, df = n - 1) * (sd_pct / sqrt(n)), NA)
   ) %>%
   # Filter out intervals where the bounds go below 40 or above 60, and remove rows where mean_pct exceeds 50
-  filter(!(lower_95 < 39 | upper_95 > 60) & mean_pct <= 100)
+  filter(!(lower_95 < 35 | upper_95 > 65) & mean_pct <= 100)
 
 # Filter time_data for 'REP' in the 'party' column
 rep_data <- time_data %>%
@@ -204,7 +206,7 @@ rep_ci_summary <- rep_data %>%
     upper_95 = ifelse(n >= 2, mean_pct + qt(0.975, df = n - 1) * (sd_pct / sqrt(n)), NA)
   ) %>%
   # Filter out intervals where the bounds go below 40 or above 60, and remove rows where mean_pct exceeds 50
-  filter(!(lower_95 < 39 | upper_95 > 60) & mean_pct <= 50)
+  filter(!(lower_95 < 35 | upper_95 > 65) & mean_pct <= 50)
 
 # Find the intersection of states in both summaries
 common_states <- intersect(dem_ci_summary$state, rep_ci_summary$state)
@@ -238,47 +240,34 @@ kable(
 
 
 ```
-
+  
 ```{r}
 #| label: fig-party-extremes
-#| fig-cap: Demographic Differences Between Top Red and Blue States
+#| fig-cap: Demographic Differences Between Maryland and South Dakota
 #| echo: false
 #| warning: false
 #| message: false
-
-library(tidyverse)
 
 # Prepare the poll_summary data frame
 poll_summary <- poll_data %>%
   mutate(party_diff = democrat_pct - republican_pct) %>%
   select(-c(2, 3, 4, 6, 7, 8, 9, 11)) %>%  # Remove specific columns by index
   select(-contains('Mode')) %>%             # Remove columns containing 'Mode' in their names
-  select(-contains('registration')) %>%     # Remove columns containing 'registration' in their names
-  drop_na()                                 # Remove rows with any NA values
-
-# Function to identify top N blue and red states
-identify_top_states <- function(data, n) {
-  data %>%
-    arrange(desc(party_diff)) %>%
-    summarise(
-      blue_states = list(state[1:n]),  
-      red_states = list(state[(nrow(data) - n + 1):nrow(data)])
-    )
-}
+  select(-contains('registration'))
 
 # Function to compute mean differences for all numeric variables
-compute_mean_differences <- function(data, blue_states, red_states) {
+compute_mean_differences <- function(data, blue_state, red_state) {
   numeric_vars <- data %>%
     select(-state, -party_diff) %>%
     select(where(is.numeric)) %>%
     names()
   
   blue_means <- data %>%
-    filter(state %in% blue_states) %>%
+    filter(state == blue_state) %>%
     summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
   
   red_means <- data %>%
-    filter(state %in% red_states) %>%
+    filter(state == red_state) %>%
     summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
   
   diff_df <- tibble(
@@ -304,7 +293,7 @@ prepare_plot_data <- function(diff_df, top_n = 6) {
       names_to = "Group", 
       values_to = "Mean"
     ) %>%
-    mutate(Group = recode(Group, "Blue_Mean" = "Republican State", "Red_Mean" = "Democrat State"))
+    mutate(Group = recode(Group, "Blue_Mean" = "Maryland", "Red_Mean" = "South Dakota"))
 }
 
 # Function to create the comparison plot
@@ -322,12 +311,12 @@ create_comparison_plot <- function(plot_data) {
       size = 3
     ) +
     # Update the colors and labels for the groups
-    scale_fill_manual(values = c("Republican State" = "red", "Democrat State" = "blue")) +
+    scale_fill_manual(values = c("Maryland" = "blue", "South Dakota" = "red")) +
     labs(
-      title = "Demographic Differences Between Top Red and Blue States",
+      title = "Demographic Differences Between Maryland and South Dakota",
       x = "Demographic Variable",
       y = "Mean Percentage",
-      fill = "State Group"
+      fill = "State"
     ) +
     scale_y_continuous(limits = c(0, 100)) +
     theme_minimal() +
@@ -336,16 +325,9 @@ create_comparison_plot <- function(plot_data) {
     )
 }
 
-
 # Main analysis function
-analyze_state_differences <- function(data, top_n_states = 1, top_n_vars = 4) {
-  top_states <- identify_top_states(data, n = top_n_states)
-  
-  diff_df <- compute_mean_differences(
-    data, 
-    blue_states = top_states$blue_states[[1]], 
-    red_states = top_states$red_states[[1]]
-  )
+analyze_state_differences <- function(data, blue_state, red_state, top_n_vars = 4) {
+  diff_df <- compute_mean_differences(data, blue_state, red_state)
   
   plot_data <- prepare_plot_data(diff_df, top_n = top_n_vars)
   
@@ -362,11 +344,12 @@ if (!"state" %in% colnames(poll_summary)) {
   stop("The 'state' column does not exist in poll_summary.")
 }
 
-# Run the analysis
-analysis_results <- analyze_state_differences(poll_summary, top_n_states = 1, top_n_vars = 5)
+# Run the analysis for Maryland and South Dakota
+analysis_results <- analyze_state_differences(poll_summary, blue_state = "Maryland", red_state = "South Dakota", top_n_vars = 5)
 
 # Display the plot
 analysis_results$plot
+
 
 
 ```
@@ -395,15 +378,12 @@ column_refs <- list(
   lower_educated = "What is the highest level of education you have attained? High school or less",
   female = "Can you please tell me your gender? Female",
   male = "Can you please tell me your gender? Male",
-  non_binary_other = "Can you please tell me your gender? Nonbinary or other",
   caucasian = "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
   hispanic_latino = "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
   vote_trump = "Who did you vote for in the 2020 election? Donald Trump",
   vote_biden = "Who did you vote for in the 2020 election? Joe Biden",
-  biden_approve = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
-  biden_disapprove = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove",
-  previous_vote_trump ="Who did you vote for in the 2020 election? Donald Trump",
-  previous_vote_joe ="Who did you vote for in the 2020 election? Joe Biden"
+  lean_trump ="Although you are undecided, which candidate do you lean toward? Donald Trump",
+  lean_Kamala ="Although you are undecided, which candidate do you lean toward? Kamala Harris"
 
 )
 ```
@@ -427,7 +407,8 @@ poll_summary <- poll_data %>%
     lower_educated_pct = round(mean(.data[[column_refs$lower_educated]], na.rm = TRUE), 1),
     female_pct = round(mean(.data[[column_refs$female]], na.rm = TRUE), 1),
     male_pct = round(mean(.data[[column_refs$male]], na.rm = TRUE), 1),
-    non_binary_other_pct = round(mean(.data[[column_refs$non_binary_other]], na.rm = TRUE), 1),
+    lean_trump_pct = round(mean(.data[[column_refs$lean_trump]], na.rm = TRUE), 1),
+    lean_kamala_pct = round(mean(.data[[column_refs$lean_Kamala]], na.rm = TRUE), 1),
     caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
     minority_pct = round(100 - caucasian_pct, 1)
   ) %>%
@@ -443,10 +424,10 @@ corr_data <- poll_summary %>%
     LowerEducated = lower_educated_pct,
     Female = female_pct,
     Male = male_pct,
-    NonBinary = non_binary_other_pct,
+    LeanTrump = lean_trump_pct,
+    LeanKamala = lean_kamala_pct,
     Caucasian = caucasian_pct,
     Minority = minority_pct
-    # No age-related columns included anymore
   )
 
 # Calculate the correlation matrix
@@ -471,15 +452,17 @@ ggcorrplot(cor_matrix,
     legend.title = element_text(size = 10),  # Legend title size
     axis.title = element_text(size = 1)  # Axis labels size
   )
+
 ```
   
 ```{r}
 #| label: fig-predictors-party-pct-2
-#| fig-cap: Example Voting and Approval Predictor Variable Visualization
+#| fig-cap: Example Voting and Leaning Predictor Variable Visualization
 #| echo: false
 #| warning: false
 #| message: false
-# Calculate poll_summary with rounding to the nearest tenth
+
+# Calculate poll_summary_2 with rounding to the nearest tenth
 poll_summary_2 <- poll_data %>%
   group_by(state) %>%
   summarise(
@@ -487,8 +470,8 @@ poll_summary_2 <- poll_data %>%
     rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
     vote_trump_pct = round(mean(.data[[column_refs$vote_trump]], na.rm = TRUE), 1),
     vote_biden_pct = round(mean(.data[[column_refs$vote_biden]], na.rm = TRUE), 1),
-    biden_approve_pct = round(mean(.data[[column_refs$biden_approve]], na.rm = TRUE), 1),
-    biden_disapprove_pct = round(mean(.data[[column_refs$biden_disapprove]], na.rm = TRUE), 1)
+    lean_trump_pct = round(mean(.data[[column_refs$lean_trump]], na.rm = TRUE), 1),
+    lean_kamala_pct = round(mean(.data[[column_refs$lean_Kamala]], na.rm = TRUE), 1)
   ) %>%
   mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
   drop_na()
@@ -500,8 +483,8 @@ corr_data_2 <- poll_summary_2 %>%
     Republican = rep_total_pct,
     VotedTrump2020 = vote_trump_pct,
     VotedBiden2020 = vote_biden_pct,
-    ApprovesOfBiden = biden_approve_pct,
-    DisapprovesOfBiden = biden_disapprove_pct
+    LeanTrump = lean_trump_pct,
+    LeanKamala = lean_kamala_pct
   )
 
 # Calculate the correlation matrix
@@ -529,97 +512,62 @@ ggcorrplot(cor_matrix_2,
 
 ```   
 
-```{r}
-#| label: fig-predictors-education-race-voting
-#| fig-cap: Correlation Matrix of Education, Race, and Past Voting Behavior
-#| echo: false
-#| warning: false
-#| message: false
-
-# Calculate poll_summary with rounding to the nearest tenth
-poll_summary_3 <- poll_data %>%
-  group_by(state) %>%
-  summarise(
-    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1),
-    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
-    highly_educated_pct = round(mean(.data[[column_refs$highly_educated]], na.rm = TRUE), 1),
-    lower_educated_pct = round(mean(.data[[column_refs$lower_educated]], na.rm = TRUE), 1),
-    caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
-    minority_pct = round(100 - caucasian_pct, 1),
-    vote_trump_pct = round(mean(.data[[column_refs$vote_trump]], na.rm = TRUE), 1),
-    vote_biden_pct = round(mean(.data[[column_refs$vote_biden]], na.rm = TRUE), 1)
-  ) %>%
-  mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
-  drop_na()
-
-# Select relevant numeric columns for correlation matrix, excluding PartyDifference
-corr_data_3 <- poll_summary_3 %>%
-  select(
-    Democrat = dem_total_pct,
-    Republican = rep_total_pct,
-    HighlyEducated = highly_educated_pct,
-    LowerEducated = lower_educated_pct,
-    Caucasian = caucasian_pct,
-    Minority = minority_pct,
-    VotedTrump2020 = vote_trump_pct,
-    VotedBiden2020 = vote_biden_pct
-  )
-
-# Calculate the correlation matrix
-cor_matrix_3 <- cor(corr_data_3, use = "complete.obs")
-
-# Set correlations less than -0.9 to NA
-cor_matrix_3[cor_matrix_3 < -0.85] <- NA
-
-# Visualize the correlation matrix without hierarchical clustering
-ggcorrplot(cor_matrix_3, 
-           hc.order = FALSE,  
-           type = "lower", 
-           lab = TRUE, 
-           lab_size = 2,  # Size for correlation labels
-           title = "Correlation Matrix of Education, Race, and Past Voting Behavior",
-           colors = c("blue", "white", "red"),  
-           legend.title = "Correlation") +
-  theme(
-    plot.title = element_text(size = 12, hjust = 0.5),  # Title size and centered
-    axis.text = element_text(size = 1),  # Axis text size
-    legend.text = element_text(size = 10),  # Legend text size
-    legend.title = element_text(size = 10),  # Legend title size
-    axis.title = element_text(size = 1)  # Axis labels size
-  )
-
-```
 The correlation matrix in @fig-predictors-party-pct shows how different predictors relate to party preferences. We can see which factors, like education or gender, are more strongly tied to Democratic or Republican leanings. Blue shading indicates stronger Democratic support, while red shows stronger Republican support. Key observations include higher education being linked to Democratic support and lower education favoring Trump in 2020. Minority groups generally lean Democratic, while Caucasian/White voters tend to support Trump. Past voter behavior shows Biden supporters remain Democratic, and Trump supporters disapprove of Biden. Additionally, women lean slightly more Democratic compared to men, who often lean Republican.
 
 ```{r}
 #| label: fig-points-over-time
-#| tbl-cap: "Parties Approval"
+#| tbl-cap: "Parties Approval and Leaning Preferences"
 #| echo: false
 #| warning: false
 #| message: false
+
 # Convert `end_date` to Date format, ensure numeric columns, and limit to 2024 and onward
 time_data_graph <- time_data %>%
   mutate(
     end_date = as.Date(end_date, format = "%Y-%m-%d"),  # Format matches YYYY-MM-DD
     pct = as.numeric(pct),
-    biden_approval = as.numeric(`Do you approve or disapprove of the job Joe Biden is doing as President? Approve`)
+    lean_trump = as.numeric(`Although you are undecided, which candidate do you lean toward? Donald Trump`),
+    lean_kamala = as.numeric(`Although you are undecided, which candidate do you lean toward? Kamala Harris`)
   ) %>%
-  filter(end_date >= as.Date("2024-01-01"))  # Limit data to 2024 and onward
+  filter(end_date >= as.Date("2024-01-01")) %>%  # Limit data to 2024 and onward
+  arrange(end_date)  # Ensure data is sorted by end_date
 
-# Separate data for Democrats, Republicans, and Biden Approval
+# Separate data for Democrats and Republicans
 democrat_data <- time_data_graph %>%
   filter(party == "DEM", !is.na(pct)) %>%
-  filter(state == "National", !is.na(pct))
+  filter(state == "National") %>%
+  arrange(end_date)
 
 republican_data <- time_data_graph %>%
   filter(party == "REP", !is.na(pct)) %>%
-  filter(state == "National", !is.na(pct))
+  filter(state == "National") %>%
+  arrange(end_date)
 
-biden_approval <- time_data_graph  %>%
-  filter(state == "National", !is.na(pct))%>%
-  select(end_date, biden_approval) %>%
-  filter(!is.na(biden_approval)) %>%
-  distinct()
+# Average `lean_trump` values for the same date, keep one entry, and limit to 4 entries per month
+lean_trump_data <- time_data_graph %>%
+  select(end_date, lean_trump) %>%
+  filter(!is.na(lean_trump)) %>%
+  group_by(month = floor_date(end_date, "month")) %>%
+  arrange(end_date) %>%
+  slice_head(n = 4) %>%  # Limit to 4 entries per month
+  ungroup() %>%
+  select(-month) %>%
+  group_by(end_date) %>%
+  summarise(lean_trump = mean(lean_trump, na.rm = TRUE)) %>%  # Average values
+  arrange(end_date)
+
+# Average `lean_kamala` values for the same date, keep one entry, and limit to 4 entries per month
+lean_kamala_data <- time_data_graph %>%
+  select(end_date, lean_kamala) %>%
+  filter(!is.na(lean_kamala)) %>%
+  group_by(month = floor_date(end_date, "month")) %>%
+  arrange(end_date) %>%
+  slice_head(n = 4) %>%  # Limit to 4 entries per month
+  ungroup() %>%
+  select(-month) %>%
+  group_by(end_date) %>%
+  summarise(lean_kamala = mean(lean_kamala, na.rm = TRUE)) %>%  # Average values
+  arrange(end_date)
 
 # Create the time plot with ggplot2
 ggplot() +
@@ -629,21 +577,21 @@ ggplot() +
   # Plot Republicans' pct over time (red)
   geom_line(data = republican_data, aes(x = end_date, y = pct, color = "Republicans"), size = 1) +
   
-  # Plot Biden's Approval over time (light blue)
-  geom_line(data = biden_approval, aes(x = end_date, y = biden_approval, color = "Biden Approval"), size = 1) +
+  # Plot Leaning Toward Trump over time (dark orange)
+  geom_line(data = lean_trump_data, aes(x = end_date, y = lean_trump, color = "Lean Trump"), size = 0.6) +
   
-  # Add a vertical line for a key date
-  geom_vline(xintercept = as.Date("2024-07-21"), color = "red", linetype = "dashed") +
+  # Plot Leaning Toward Kamala over time (purple)
+  geom_line(data = lean_kamala_data, aes(x = end_date, y = lean_kamala, color = "Lean Kamala"), size = 0.6) +
   
   # Customize labels, theme, colors, and y-axis limits
   labs(
-    title = "Democrat vs. Republican and Biden Approval Over Time",
+    title = "Democrat vs. Republican and Leaning Preferences Over Time",
     x = "Date",
     y = "Percentage (%)",
     color = "Legend"
   ) +
-  scale_color_manual(values = c("Democrats" = "blue", "Republicans" = "red", "Biden Approval" = "lightblue")) +
-  ylim(25, 55) + # Set y-axis range from 25 to 55, adjust if needed
+  scale_color_manual(values = c("Democrats" = "blue", "Republicans" = "red", "Lean Trump" = "darkorange", "Lean Kamala" = "purple")) +
+  ylim(25, 55) +  # Set y-axis range from 25 to 55, adjust if needed
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -661,82 +609,38 @@ Key predictor variables:
 
 # Model {#sec-model}
 ## Model Development
-The goal of our model is to forecast the popular vote outcome of the 2024 US presidential election, focusing specifically on eight swing states. We will choose the predictor variables based on the correlation matrix we created previously (@fig-predictors-party-pct). It is important to note that even if the percentage of people who vote for Trump (representing the Republican Party) or Harris (representing the Democratic Party) is slightly below 50%, this does not necessarily mean that the corresponding candidate will not be elected as the next President of the United States, given the percentage of people who choose not to vote. 
 
-```{r}
-#| label: fig-hist-for-republican
-#| fig-cap: Distribution of Republican Party Supporting Rate
-#| echo: false
+### Forecasting Vote Outcomes in Key Swing States
 
-# Calculate the variable that represents the Republican Party Supporting Rate
-# grouped based on various states
-data_rep1 <- poll_data %>%
-  group_by(state) %>%
-  summarise(
-    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1)
-  )
+Our model aims to forecast the voting outcome of the 2024 U.S. presidential election, focusing specifically on eight pivotal swing states. We carefully selected predictor variables based on a correlation matrix we generated previously (see Figure @fig-predictors-party-pct).
 
-# Create a histogram based on targeted data variable
-ggplot(data = data_rep1, aes(x=rep_total_pct)) +
-  geom_histogram(binwidth = 2) +
-  labs(title = "Republic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
+### Model Design and Approach
 
-```
+We constructed two separate Bayesian generalized linear models to estimate the percentage likelihood of Trump and Harris winning in each swing state. Our models look at demographic and historical data that let us to generate probabilistic predictions for both candidates. These models provide insights into which candidate is more likely to secure a win, even in closely contested states.
 
-The following @fig-hist-for-democratic is the histogram of the Democratic Party Supporting Rate, which describes the distribution of the response variable for the second model. Our final choice is to construct two generalized linear models: one for the percentage that Trump will become the next President and one for Harris. We can then compare the predicted percentages of people voting for each candidate to make a final prediction of who is more likely to be the next President of the United States.
+### Key Components of Our Models
 
-```{r}
-#| label: fig-hist-for-democratic
-#| fig-cap: Distribution of Democratic Party Supporting Rate
-#| echo: false
+- **Outcome Variables**: The percentage of the popular vote each candidate is expected to receive.
+- **Predictor Variables**: We include factors such as education level (e.g., college graduate vs. high school or less), gender distribution (male vs. female), and ethnic demographics (White or Caucasian vs. Hispanic or Latino). Additionally, historical voting patterns (e.g., 2020 voting preferences) and current leanings toward Trump or Harris are crucial predictors.
+- **Model Structure**: Each model incorporates an intercept to represent baseline support and predictor coefficients to quantify the effect of each variable on the vote share. We use a Beta distribution to account for the bounded nature of percentage outcomes, ensuring our predictions remain between 0 and 100%.
 
-# Calculate the variable that represents the Republican Party Supporting Rate
-# grouped based on various states
-data_rep1 <- poll_data %>%
-  group_by(state) %>%
-  summarise(
-    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1)
-  )
+### Assumptions Underlying Our Models
 
-# Create a histogram based on targeted data variable
-ggplot(data = data_rep1, aes(x=dem_total_pct)) +
-  geom_histogram(binwidth = 2) +
-  labs(title = "Democratic Party Supporting Rate Distirbution", x = "Percentage", y = "Count")
+1. **Linearity**: The relationship between each predictor and vote share is assumed to be approximately linear.
+2. **Independence**: We assume that vote share predictions for each state are independent, conditional on the included predictors.
+3. **Non-Normality**: Given the non-normal distribution of our response variables, using a generalized linear model is more appropriate. Our analysis revealed that the distribution of Democratic support resembles a Poisson-like distribution, while Republican support shows multimodal characteristics.
+4. **Priors**: We applied weakly informative priors to regularize our predictions, with specific priors for those who voted for Trump and Biden in 2020, aligning with historical voting trends.
 
-```
+### Bayesian Modeling Implementation
 
-To decide between using a generalized linear model or a linear model for each of the two models, we checked the normality of the response variables: the percentage of people supporting the Republican Party and the percentage supporting the Democratic Party. According to @fig-hist-for-democratic and @fig-hist-for-republican, the distributions of both response variables do not appear normal. The distribution of the Democratic Party Supporting Rate tends to resemble a Poisson distribution, with most percentages having a similar frequency and an outlier around 67-68 percent. The Republican Party Supporting Rate distribution has a maximum frequency around 50 percent, with similar frequencies around 25-26 percent and 48-49 percent, suggesting a potential violation of the normal distribution assumption. 
+We implemented our models using the `brms` package in R, which allows for flexible Bayesian regression modeling. The models were fit with four chains, running 6,000 iterations each, to ensure convergence and reliable posterior estimates. Sensible default priors were adjusted to reflect our prior knowledge about voting behavior, and we conducted posterior predictive checks to assess the models' performance.
 
-Therefore, since the response variables are not normally distributed, we will use a generalized linear model for both models to better capture the characteristics of the data.
+### Results and Interpretation
 
-The goal of our model is to forecast the likely vote outcome in 8 swing states for the 2024 US presidential election. This model will allow us to estimate the expected vote share for each candidate based on state-level characteristics and prior voting patterns, which are especially important in determining close elections.
+The results, summarized in Table @tbl-modelresults, highlight the predicted vote shares for each candidate in the swing states. For each state, we report the posterior mean, as well as 95% credible intervals, to capture the range of plausible outcomes. Our findings underscore the impact of demographic and historical factors on voting behavior, providing a nuanced understanding of which states are likely to be battlegrounds in the upcoming election.
 
-## Model Set-up
+By using a Bayesian approach, we not only make point estimates but also quantify the uncertainty surrounding these predictions. This is crucial for election forecasting, where even small shifts in voter behavior can have significant implications. Our analysis will inform campaign strategies and identify states where mobilizing specific demographics could be pivotal.
 
-We define the model as a Bayesian linear model where the outcome, \( y_i \), represents the predicted vote share in state \( i \). The predictors in the model capture key demographic and historical voting patterns across swing states, and we aim to model this outcome with an intercept, \( \alpha \), and a state-specific predictor coefficient, \( \beta_i \), that represents the effect of a given variable \( x_i \) on vote share.
-
-### Model Components and Assumptions
-
-- **Outcome Variable:** The predicted vote share (as a percentage) for each candidate in each state.
-- **Predictors:** Variables include demographic factors (e.g., education, income, race distribution) and historical voting patterns (e.g., previous election vote shares, approval ratings).
-- **Intercept:** Represents the baseline vote share in the absence of additional predictors.
-- **Coefficients:** These capture the effect size of each predictor on vote share, allowing for state-specific adjustments.
-- **Residual Standard Deviation:** Accounts for unexplained variation in vote share predictions, assumed to follow an exponential distribution.
-
-#### Assumptions
-1. **Linearity:** The relationship between each predictor and vote share is assumed to be approximately linear.
-2. **Independence:** Vote share predictions for each state are independent, conditional on the predictors.
-3. **Normality of Errors:** Errors in vote share predictions are assumed to be normally distributed.
-4. **Prior Distributions:** We use weakly informative priors to regularize predictions without imposing strong assumptions.
-
-### Implementation
-We run this model in R using the `rstanarm` package, which provides Bayesian estimation with sensible defaults. The default priors in `rstanarm` are chosen to be weakly informative to prevent overfitting while still regularizing our model coefficients.
-
-## Model Justification and Results
-
-By using a Bayesian linear model, we leverage historical and demographic data to provide probabilistic estimates of vote share, giving us a distribution of possible outcomes for each state. This approach allows for uncertainty quantification around predictions, which is particularly important in close elections.
-
-Our results are summarized in Table @tbl-modelresults, which shows the estimated vote shares, posterior means, and credible intervals for each candidate in each swing state. These findings indicate the influence of demographic and historical factors on vote share predictions. Furthermore, the model’s predictive accuracy is evaluated through posterior predictive checks, indicating how well the model captures actual voting patterns. The implications of these findings are significant for forecasting election outcomes, particularly in identifying which states are likely to be more competitive.
 
 ```{r}
 #| label: fig-results-model
@@ -744,7 +648,7 @@ Our results are summarized in Table @tbl-modelresults, which shows the estimated
 #| echo: false
 #| warning: false
 #| message: false
-# Select relevant columns for the prediction
+# Define the swing states of interest
 swing_states <- c("Michigan", "Georgia", "Nevada", "North Carolina", "New Hampshire", "Wisconsin", "Pennsylvania", "Arizona", "National")
 
 # Filter data for the specified swing states and remove any missing data
@@ -763,8 +667,8 @@ swing_data <- swing_data %>%
     `For.statistical.purposes.only..can.you.please.tell.me.your.ethnicity..Hispanic.or.Latino.of.any.race` = "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
     `Who.did.you.vote.for.in.the.2020.election..Donald.Trump` = "Who did you vote for in the 2020 election? Donald Trump",
     `Who.did.you.vote.for.in.the.2020.election..Joe.Biden` = "Who did you vote for in the 2020 election? Joe Biden",
-    `Do.you.approve.or.disapprove.of.the.job.Joe.Biden.is.doing.as.President..Approve` = "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
-    `Do.you.approve.or.disapprove.of.the.job.Joe.Biden.is.doing.as.President..Disapprove` = "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
+    `Although.you.are.undecided..which.candidate.do.you.lean.toward..Donald.Trump` = "Although you are undecided, which candidate do you lean toward? Donald Trump",
+    `Although.you.are.undecided..which.candidate.do.you.lean.toward..Kamala.Harris` = "Although you are undecided, which candidate do you lean toward? Kamala Harris"
   )
 
 # Calculate how to distribute the states evenly
@@ -790,37 +694,37 @@ bayesian_model_dem <- readRDS(here::here("models/bayesian_model_dem.rds"))
 bayesian_model_rep <- readRDS(here::here("models/bayesian_model_rep.rds"))
 
 # Generate predictions for Democratic and Republican models
-predictions_dem <- posterior_predict(bayesian_model_dem, newdata = swing_data)
-predictions_rep <- posterior_predict(bayesian_model_rep, newdata = swing_data)
+#predictions_dem <- posterior_predict(bayesian_model_dem, newdata = swing_data)
+#predictions_rep <- posterior_predict(bayesian_model_rep, newdata = swing_data)
 
 # Function to summarize predictions by state
-aggregate_summary <- function(predictions, state_labels) {
-  summary_df <- data.frame(State = character(), mean = numeric(), lower = numeric(), upper = numeric())
-  for (state in unique(state_labels)) {
-    state_indices <- which(state_labels == state)
-    state_predictions <- predictions[, state_indices]
-    state_mean <- mean(state_predictions)
-    state_lower <- quantile(state_predictions, 0.025)
-    state_upper <- quantile(state_predictions, 0.975)
-    summary_df <- rbind(summary_df, data.frame(State = state, mean = state_mean, lower = state_lower, upper = state_upper))
-  }
-  return(summary_df)
-}
+#aggregate_summary <- function(predictions, state_labels) {
+  #summary_df <- data.frame(State = character(), mean = numeric(), lower = numeric(), upper = numeric())
+  #for (state in unique(state_labels)) {
+    #state_indices <- which(state_labels == state)
+    #state_predictions <- predictions[, state_indices]
+    #state_mean <- mean(state_predictions)
+    #state_lower <- quantile(state_predictions, 0.025)
+    #state_upper <- quantile(state_predictions, 0.975)
+    #summary_df <- rbind(summary_df, data.frame(State = state, mean = state_mean, lower = state_lower, upper = state_upper))
+  #}
+  #return(summary_df)
+#}
 
 # Summarize predictions for both Democrat and Republican models
-dem_summary <- aggregate_summary(predictions_dem, swing_data$State)
-rep_summary <- aggregate_summary(predictions_rep, swing_data$State)
+#dem_summary <- aggregate_summary(predictions_dem, swing_data$State)
+#rep_summary <- aggregate_summary(predictions_rep, swing_data$State)
 
 # Combine summaries into the final prediction summary
-prediction_summary <- data.frame(
-  State = dem_summary$State,
-  DEM_Mean = dem_summary$mean,
-  DEM_Lower = dem_summary$lower,
-  DEM_Upper = dem_summary$upper,
-  REP_Mean = rep_summary$mean,
-  REP_Lower = rep_summary$lower,
-  REP_Upper = rep_summary$upper
-)
+#prediction_summary <- data.frame(
+  #State = dem_summary$State,
+  #DEM_Mean = dem_summary$mean,
+  #DEM_Lower = dem_summary$lower,
+  #DEM_Upper = dem_summary$upper,
+  #REP_Mean = rep_summary$mean,
+  #REP_Lower = rep_summary$lower,
+  #REP_Upper = rep_summary$upper
+#)
 
 ```
 
@@ -836,23 +740,23 @@ Our results are summarized in @tbl-modelresults.
 #| message: false
 
 # Modify the prediction summary
-prediction_summary <- prediction_summary %>%
-  select(State, DEM_Mean, REP_Mean) %>%  # Keep only the mean columns
-  mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))
+#prediction_summary <- prediction_summary %>%
+  #select(State, DEM_Mean, REP_Mean) %>%  # Keep only the mean columns
+  #mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))
 
 # Create a formatted table
-kable(
-  prediction_summary,
-  col.names = c("State", "Democrat Points", "Republican Points", "Winner"),
-  format = "latex", 
-  digits = 2,
-  escape = FALSE
-) %>%
-  kable_styling(
-    latex_options = c("striped", "hold_position", "condensed"), 
-    full_width = FALSE, 
-    font_size = 10
-)
+#kable(
+  #prediction_summary,
+  #col.names = c("State", "Democrat Points", "Republican Points", "Winner"),
+  #format = "latex", 
+  #digits = 2,
+  #escape = FALSE
+#) %>%
+  #kable_styling(
+    #latex_options = c("striped", "hold_position", "condensed"), 
+    #full_width = FALSE, 
+    #font_size = 10
+#)
 
 ```
 

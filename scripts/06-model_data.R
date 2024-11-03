@@ -5,18 +5,18 @@
 # Contact: davidgadiel.flores@mail.utoronto.ca
 # License: MIT
 
-#### Workspace setup ####
+#### Updated Workspace Setup ####
 library(here)
 library(arrow)
 library(dplyr)
-library(brms)     
+library(brms)
 
 # Data Import
 analysis_data <- read_parquet(here::here("data/02-analysis_data/timeline_data.parquet"))
 
 #### Model Setup for Democrat Voters ####
 
-# Define column references 
+# Define updated predictor columns
 predictor_columns <- c(
   "What is the highest level of education you have attained? College graduate",
   "What is the highest level of education you have attained? High school or less",
@@ -24,10 +24,10 @@ predictor_columns <- c(
   "Can you please tell me your gender? Male",
   "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
   "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  "Although you are undecided, which candidate do you lean toward? Donald Trump",
+  "Although you are undecided, which candidate do you lean toward? Kamala Harris",
   "Who did you vote for in the 2020 election? Donald Trump",
-  "Who did you vote for in the 2020 election? Joe Biden",
-  "Do you approve or disapprove of the job Joe Biden is doing as President? Approve",
-  "Do you approve or disapprove of the job Joe Biden is doing as President? Disapprove"
+  "Who did you vote for in the 2020 election? Joe Biden"
 )
 
 # Filter analysis_data to only include rows where party is DEM
@@ -56,10 +56,9 @@ model_data_dem <- analysis_data_dem %>%
 predictor_formula <- paste(predictor_columns, collapse = " + ")
 formula <- as.formula(paste("pct_scaled ~", predictor_formula))
 
-# Set priors with specific priors for `Who did you vote for...` columns
-priors <- c(
+# Set priors with a specific prior for `Who did you vote for in the 2020 election? Joe Biden`
+priors_dem <- c(
   prior(normal(0, 5), class = "b"),
-  prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Donald.Trump"),
   prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Joe.Biden"),
   prior(beta(1, 1), class = "phi")  # Prior for precision parameter
 )
@@ -69,25 +68,20 @@ dem_model <- brm(
   formula = formula,
   data = model_data_dem,
   family = Beta(),
-  prior = priors,
+  prior = priors_dem,
   chains = 4,
   iter = 6000,
   warmup = 2000,
   cores = 4,
   seed = 123,
-  control = list(adapt_delta = 0.99999, max_treedepth = 20)
+  control = list(adapt_delta = 0.9, max_treedepth = 15)
 )
 
 ### Save the Democrat Model ###
-
 if (!dir.exists("models")) {
   dir.create("models")
 }
-
-saveRDS(
-  dem_model,
-  file = "models/bayesian_model_dem.rds"
-)
+saveRDS(dem_model, file = "models/bayesian_model_dem.rds")
 
 #### Model Setup for Republican Voters ####
 
@@ -111,23 +105,26 @@ model_data_rep <- analysis_data_rep %>%
 
 ### Specify and Fit the Republican Model ###
 
+# Set priors with a specific prior for `Who did you vote for in the 2020 election? Donald Trump`
+priors_rep <- c(
+  prior(normal(0, 5), class = "b"),
+  prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Donald.Trump"),
+  prior(beta(1, 1), class = "phi")  # Prior for precision parameter
+)
+
 # Fit the Republican Model
 rep_model <- brm(
   formula = formula,
   data = model_data_rep,
   family = Beta(),
-  prior = priors,
+  prior = priors_rep,
   chains = 4,
   iter = 6000,
   warmup = 2000,
   cores = 4,
   seed = 123,
-  control = list(adapt_delta = 0.99999, max_treedepth = 20)
+  control = list(adapt_delta = 0.9, max_treedepth = 15)
 )
 
 ### Save the Republican Model ###
-
-saveRDS(
-  rep_model,
-  file = "models/bayesian_model_rep.rds"
-)
+saveRDS(rep_model, file = "models/bayesian_model_rep.rds")

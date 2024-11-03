@@ -317,3 +317,186 @@ Header and column alignment: New headers are created, and the cleaned data is al
 Filling missing values: The fill() function is used to replace NA values in the first column with the previous non-NA value.
 Merging and saving the final dataset: The cleaned and merged data is written to a CSV file and returned for further processing or viewing.
 Let me know if you need further adjustments or if you'd like to test it with your dataset!
+
+
+
+
+
+
+
+You said:
+Can you write me R code to iterate through all cells in the state_data dataframe, check if each cell contains a Google Sheets link, process those links using a function called process_google_sheet, append the results into a list called mega_dataset, combine all the data frames into one mega_dataset_combined, and finally save this combined dataset to a CSV file named 'questions_dataset.csv'?
+ChatGPT said:
+ChatGPT
+Sure! Here is the R code to perform the specified tasks:
+
+r
+Copy code
+# Load necessary libraries
+library(dplyr)
+library(readr)
+
+# Initialize an empty list to store processed data frames
+mega_dataset <- list()
+
+# Iterate through all cells in the state_data dataframe
+for (i in seq_len(nrow(state_data))) {
+  for (j in seq_len(ncol(state_data))) {
+    # Get the cell value as a string
+    cell_value <- as.character(state_data[i, j])
+    
+    # Check if the cell contains a Google Sheets link and is not NA
+    if (!is.na(cell_value) && is_google_sheet_link(cell_value)) {
+      
+      # Process the Google Sheet link
+      tryCatch({
+        # Use your custom function to process the Google Sheet
+        processed_data <- process_google_sheet(cell_value, output_path = NULL)
+        
+        # Append the processed data to the mega dataset
+        mega_dataset <- append(mega_dataset, list(processed_data))
+      }, error = function(e) {
+        # Handle errors, if any occur during the process
+        message(paste("Error processing link:", cell_value, e))
+      })
+    }
+  }
+}
+
+# Combine all data frames in mega_dataset into one
+mega_dataset_combined <- bind_rows(mega_dataset)
+
+# Save the combined dataset to a CSV file
+write_csv(mega_dataset_combined, "data/02-analysis_data/pollster_data/questions_dataset.csv")
+This code does the following:
+
+Initializes an empty list mega_dataset to store the processed data frames.
+Iterates through each cell in the state_data dataframe.
+Checks if the cell contains a Google Sheets link using a custom function is_google_sheet_link.
+Processes the link with process_google_sheet, handling any errors with tryCatch.
+Appends the processed data to mega_dataset.
+Combines all data frames in the list into one data frame mega_dataset_combined.
+Saves the combined dataset to a CSV file named "questions_dataset.csv".
+Make sure to define or have the process_google_sheet and is_google_sheet_link functions available in your environment for this to work. Let me know if you need further assistance!
+
+David: 
+I need help organizing and cleaning up my state_survey_data and then merging it with another dataset. Here is what I need step-by-step:
+
+1. Organize and clean up state_survey_data:
+   - Remove any columns that contain "Total" in the header.
+   - Replace any NA values in the first column (state) with "National."
+   - Delete columns that have more than 10 NA values.
+   - Remove columns that have the word "System" in the header.
+   - Round all numeric values in the data to the nearest tenth.
+
+2. Merge the cleaned dataset with another file:
+   - Read a CSV file (data/02-analysis_data/pollster_data/emerson_list_data.csv), clean the column names, and convert NA values in the state column to "National."
+   - Calculate num_respondents as a rounded value based on pct and sample_size.
+   - Filter to only include rows where the party is either "DEM" or "REP."
+   - Group by state and party and summarize to get the start date, end date, total sample size, percentage, and number of respondents for each group.
+   - Pivot the summarized data so that columns for Democrats and Republicans are separate and rename them to have clear names (like democrat_start_date, republican_end_date, etc.).
+   - Merge this pivoted data with the cleaned state_survey_data using a left join on the state column.
+   - Reorder the columns so that all Democrat-related columns come first, followed by Republican-related columns, and then everything else.
+   - Save the final merged dataset as a Parquet file.
+ChatGPT said:
+ChatGPT
+Here's the code to accomplish your request:
+
+r
+Copy code
+# Load necessary libraries
+library(tidyverse)
+library(janitor)
+library(arrow)
+
+#### Step 1: Organize and Clean `state_survey_data` ####
+
+# Remove any columns that contain "Total" in the header
+state_polls <- state_survey_data %>%
+  select(-matches(".*Total$"))
+
+# Replace any NA values in the first column (state) with "National"
+state_polls[[1]] <- ifelse(is.na(state_polls[[1]]), "National", state_polls[[1]])
+
+# Delete columns that have more than 10 NA values
+state_polls_clean <- state_polls %>%
+  select(where(~ sum(is.na(.)) <= 10)) %>%
+  # Remove columns that have the word "System" in the header
+  select(-matches(".*System.*")) %>%
+  # Round all numeric values to the nearest tenth
+  mutate(across(where(is.numeric), ~ round(., 1)))
+
+#### Step 2: Merge with Another Dataset ####
+
+# Read and clean the CSV file, convert NA values in `state` column to "National"
+data <- read_csv("data/02-analysis_data/pollster_data/emerson_list_data.csv") %>%
+  clean_names() %>%
+  mutate(state = if_else(is.na(state), "National", state))
+
+# Calculate `num_respondents` as a rounded value based on `pct` and `sample_size`
+cleaned_data <- data %>%
+  mutate(num_respondents = round((pct / 100) * sample_size, 0))
+
+# Filter to only include Democrats (DEM) and Republicans (REP)
+filtered_data <- cleaned_data %>%
+  filter(party %in% c("DEM", "REP"))
+
+# Group by `state` and `party` and summarize relevant information
+state_summary <- filtered_data %>%
+  group_by(state, party) %>%
+  filter(end_date == max(end_date, na.rm = TRUE)) %>%
+  summarize(
+    start_date = min(start_date, na.rm = TRUE),  # Earliest start date
+    end_date = max(end_date, na.rm = TRUE),      # Latest end date
+    total_sample_size = sum(sample_size, na.rm = TRUE),  # Total sample size
+    pct = first(pct),                            # Percentage of the latest entry
+    num_respondents = sum(num_respondents, na.rm = TRUE) # Total number of respondents
+  ) %>%
+  ungroup()
+
+# Pivot data to create separate columns for Democrats and Republicans
+pivoted_data <- state_summary %>%
+  select(state, party, start_date, end_date, total_sample_size, pct, num_respondents) %>%
+  pivot_wider(
+    names_from = party,
+    values_from = c(start_date, end_date, total_sample_size, pct, num_respondents),
+    names_glue = "{.value}_{party}"
+  ) %>%
+  # Rename columns for clarity
+  rename(
+    democrat_start_date = start_date_DEM,
+    democrat_end_date = end_date_DEM,
+    democrat_total_sample_size = total_sample_size_DEM,
+    democrat_pct = pct_DEM,
+    democrat_num_respondents = num_respondents_DEM,
+    
+    republican_start_date = start_date_REP,
+    republican_end_date = end_date_REP,
+    republican_total_sample_size = total_sample_size_REP,
+    republican_pct = pct_REP,
+    republican_num_respondents = num_respondents_REP
+  )
+
+# Merge the pivoted data with the cleaned `state_survey_data`
+updated_dataset <- state_polls_clean %>%
+  left_join(pivoted_data, by = "state")
+
+# Reorder columns to have Democrat-related columns first, followed by Republican-related columns
+updated_dataset <- updated_dataset %>%
+  select(state, starts_with("democrat"), starts_with("republican"), everything())
+
+# Save the final dataset as a Parquet file
+write_parquet(updated_dataset, "data/02-analysis_data/summarized_state_poll_data.parquet")
+
+# Output a message to indicate completion
+cat("Data has been organized, cleaned, and saved successfully as a Parquet file.")
+Explanation
+Step 1: Organize and Clean state_survey_data
+Removed columns containing "Total" and replaced NA values in the state column.
+Removed columns with more than 10 NA values and those containing "System."
+Rounded all numeric values to one decimal place.
+Step 2: Merge with Another Dataset
+Cleaned and processed the second dataset.
+Filtered for Democrat and Republican data, summarized it, and pivoted the data to create separate columns.
+Merged the cleaned datasets and reordered the columns.
+Saved the final output as a Parquet file.
