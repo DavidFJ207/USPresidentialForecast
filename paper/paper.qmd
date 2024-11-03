@@ -841,6 +841,110 @@ Survey Link: https://forms.gle/vm3gKbsMAZvzakFn8
 
 ## Copy of Survey {-}
 
+A copy of the survey and its questions are provided below:
+
+**2024 US Presidential Election Survey**
+
+Thank you for considering participation in the 2024 US Presidential Election Survey. The purpose of this survey is to better understand and forecast election results. This survey gathers anonymous data on voter opinions and demographics for the 2024 US presidential election. You may stop the survey at any time without consequence. All responses will remain anonymous, and results will be reported in aggregate form only. A small monetary incentive will be offered upon completion. 
+
+If you have any questions or concerns about this survey, please reach out to any of the researchers below:
+
+Tina Kim, University of Toronto: tinak.kim@mail.utoronto.ca
+David Flores, University of Toronto: davidgadiel.flores@mail.utoronto.ca
+Kevin Shao, University of Toronto: kevin.shao@mail.utoronto.ca
+
+By proceeding, you confirm your consent to participate.
+  - I consent to participate.
+  - I do not consent to participate.
+  
+1. **Are you a US citizen?**
+  - Yes
+  - No
+
+2. **Are you eligible to vote in the upcoming US presidential election?**
+  - Yes
+  - No
+
+3. **What is your age group?**
+Under 18
+  - 18 - 24
+  - 25 - 34
+  - 35 - 44
+  - 45 - 54
+  - 55 - 64
+  - 65 or older
+  - Prefer not to say
+
+4. **What is your gender?**
+  - Male
+  - Female
+  - Non-binary
+  - Prefer not to say
+
+5. **What is your ethnicity? (choose all that apply)**
+  - White / Caucasian
+  - Black or African American
+  - Hispanic or Latino
+  - Asian
+  - Native American or Alaska Native
+  - Native Hawaiian or Other Pacific Islander
+  - Middle Eastern or North African
+  - Other
+  - Prefer not to say
+
+6. **What is the highest level of education you have completed?**
+  - Less than high school
+  - High school diploma or equivalent (e.g., GED)
+  - Some college, no degree
+  - Associate’s degree
+  - Bachelor’s degree
+  - Master’s degree
+  - Professional degree (e.g., JD, MD)
+  - Doctorate (e.g., PhD, EdD)
+  - Prefer not to say
+
+7. **Are you paying attention to this survey?**
+  - Yes
+  - No
+
+8. **What is your income level?**
+  - Less than $20,000
+  - $20,000 - $39,999
+  - $40,000 - $59,999
+  - $60,000 - $79,999
+  - $80,000 - $99,999
+  - $100,000 - $149,999
+  - $150,000 - $199,999
+  - $200,000 or more
+  - Prefer not to say
+
+9. **What is the highest level of education you have attained?**
+  - Less than high school
+  - High school diploma or equivalent (e.g., GED)
+  - Some college, no degree
+  - Associate’s degree
+  - Bachelor’s degree
+  - Master’s degree
+  - Professional degree (e.g., JD, MD)
+  - Doctorate (e.g., PhD, EdD)
+  - Prefer not to say
+
+10. **What is your political affiliation?**
+  - Democrat
+  - Republican
+  - Independent
+  - Other
+  - Prefer not to say
+
+11. **If the election were held today, which candidate would you vote for?**
+  - Candidate A
+  - Candidate B
+  - Candidate C
+  - Other
+  - Undecided
+  - Prefer not to say
+
+
 ## Additional Data & Model Details
 Include any technical details on data cleaning, model diagnostics, and posterior checks.
 
