@@ -37,7 +37,7 @@ This paper addresses a gap in election forecasting by using recent polling data 
 
 *Results paragraph:* Summarize the key findings of the model, highlighting its predictive accuracy and implications.
 
-The remainder of this paper is structured as follows: @sec-data details the data and measurement process; @sec-results covers model development and results; @sec-discussion discusses implications and future steps.
+The remainder of this paper is structured as follows: @sec-data details the data and measurement process; @sec-model covers the model; @sec-results provides results; and @sec-discussion discusses implications and future steps.
 
 # Data {#sec-data} 
 ## Overview 
