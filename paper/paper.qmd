@@ -686,6 +686,7 @@ prediction_summary <- data.frame(
 )
 ```
 
+\newpage
 # Results {#sec-results}
 
 The results, summarized in Table @tbl-modelresults, show the predicted vote shares for each candidate in the swing states. Our findings show the impact of demographic and historical factors on voting behavior.
@@ -720,6 +721,8 @@ kable(
 
 
 ```
+
+\newpage
 
 # Discussion {#sec-discussion}
 
