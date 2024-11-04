@@ -35,7 +35,7 @@ The outcome of the 2024 Presidential Election will determine whether the Republi
 
 This paper addresses a gap in election forecasting by using recent polling data from key swing states to provide a prediction of the 2024 election outcome. We aim to determine which candidate—Kamala Harris or Donald Trump—is more likely to win this election. Our response variable is in turn the probability of one candidate winning the election based on our chosen Emerson poll data. When one candidate’s support hovers just below 50%, it becomes challenging to predict their election as the 47th President of the United States, especially considering the potential influence of non-participating voters. To increase the accuracy of our predictions, we will develop two models: one estimating the probability of Harris, representing the Democratic Party, winning the election, and the other estimating the probability of Trump, representing the Republican Party, winning. By comparing these predictions, we aim to arrive at a clearer conclusion about who is more likely to be elected as the next President of the United States.
 
-In our models, we identified eight pivotal swing states—Georgia, Michigan, Nevada, New Hampshire, North Carolina, Pennsylvania, and Wisconsin—crucial for predicting the 2024 election outcome. We constructed Bayesian generalized linear models to estimate the percentage likelihood of candidates Trump and Harris winning in these states, incorporating education level, gender distribution, ethnic demographics, historical voting patterns, approval ratings of Joe Biden, and current leanings toward Trump or Harris. Our election forecast resulted in 6 out of 8 pivotal states, as well as the national polling average, leaning towards the Republican party.
+In our models, we identified eight pivotal swing states—Georgia, Michigan, Nevada, New Hampshire, North Carolina, Pennsylvania, and Wisconsin—crucial for predicting the 2024 election outcome. We constructed Bayesian generalized linear models to estimate the percentage likelihood of candidates Trump and Harris winning in these states, incorporating education level, gender distribution, ethnic demographics, historical voting patterns, and current leanings toward Trump or Harris. Our election forecast resulted in 6 out of 8 pivotal states, as well as the national polling average, leaning towards the Republican party.
 
 The remainder of this paper is structured as follows: @sec-data details the data and measurement process; @sec-model covers the model; @sec-results provides results; and @sec-discussion discusses implications and future steps.
 
@@ -148,7 +148,7 @@ kable(poll_summary_demographics) %>%
 ```
 
 ## Measurement  
-We chose Emerson as our primary pollster, and the reasoning for this is detailed in @sec-appendix. Emerson's polls offered crucial information, such as polling dates, party affiliations, sample sizes, and the percentage of support for each political party.
+We chose Emerson as our primary pollster, and the reasoning for this is detailed in @sec-appendix-A. Emerson's polls offered crucial information, such as polling dates, party affiliations, sample sizes, and the percentage of support for each political party.
 
 Our analysis centered on voter preferences by party rather than individual candidates. This approach was more relevant for identifying overall trends and helped us forecast which states might swing in future elections, especially swing states. We will discuss this focus further in our results section, @sec-results.
 
@@ -794,9 +794,9 @@ Weaknesses and next steps should also be included.
 
 \appendix
 
-# Appendix {#sec-appendix}
+# Appendix {#sec-appendix-A}
 
-## Appendix A: Pollster Methodology Overview {-}
+## Pollster Methodology Overview {-}
 Emerson College Polling was initially a college polling exercise and is now an "innovative, nationally-ranked" non-partisan polling center (@AboutUs). For the 2024 USA Presidential Election pollster, the Emerson College Polling defined the population to be "likely voters" of 2024 United States Presidential Election. Emerson College Polling does indicate that the targeted population of "likely voters" is based on "2024 Likely Voter Modeling." However, the methodology for this modelling and the specific model is not indicated, so we can't determine the scope of the targeted population (@Polling).
 
 Emerson College Polling recruits people completing this survey for this national pollster by contacting mobile phones using "MMS-to-Online", "Online Opt-in Panel", and "IVR(Interactive Voice Response)" (@Polling). In the MMS-to-Online approach, the target population were sent text messages with graphics that invite them to take a "screening questionnaire", and those who pass the questionnaire can move on to take the survey. The selected respondents were based on state voter files "provided by Aristotle." The Online Opt-in Panel approach involves respondents from the targeted population being invited to finish the survey by means of an online opt-in panel "provided by CINT" (@AboutUs). Specifically, in the Online Panel approach, selected voters were pre-matched to "L2 voter file data provided by Rep Data" (@Polling). Finally, the IVR approach involves making automatic telephone calls to selected "likely voters." Participants then answer the survey using their "touch-tone telephone". The email approach indicated in Emerson College Polling's official methodology (@AboutUs) is not mentioned in the National Polling, so it can be assumed that this approach is not used in our chosen pollster data.
@@ -811,7 +811,7 @@ The questionnaire set by Emerson College Polling for this survey, based on the n
 
 Therefore, after analyzing the advantages and disadvantages of this pollster about the 2024 United States Presidential Elections by Emerson College Polling, we can conclude that Emerson College Polling can improve their pollster by implementing the following approaches. Emerson can consider increasing the sample size to make their survey more representative of the targeted population, explicitly describing their definition of the targeted population "likely voters" and the model used to determine characteristics of the targeted population. Emerson can also consider changing from simple random to stratified sampling (dividing the population into independent 'subsets', then performing random sampling in each group), based on different states or other demographic features based on their targeted population model, making their sample more representative of the population, decrease the length of the questionnaire, and also explicitly explain their treatment of non-response, which will increase the validity of the study. Overall, this pollster is still highly valid, and generally reliable for predicting the 2024 United States Presidential Election.
 
-## Appendix B: Idealized Survey Design for $100K Budget {-}
+# Appendix: Idealized Survey Design for $100K Budget {#sec-appendix-B}
 
 ## Introduction {-}
 
