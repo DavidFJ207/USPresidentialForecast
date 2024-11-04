@@ -12,12 +12,10 @@
 library(googledrive)
 library(readxl)
 library(tidyverse)
-library(dplyr)
-library(dplyr)
 library(lubridate)
-library(readr)
 library(janitor)
 library(arrow)
+
 state_data <- read_csv("data/02-analysis_data/pollster_data/pollster_link_data.csv")
 #### Helper Functions ####
 

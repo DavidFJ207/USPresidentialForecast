@@ -62,7 +62,7 @@ time_data <- time_data %>%
 
 ```
 
-Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @tbl-predictors-pct-summary-1 and @tbl-predictors-pct-summary-2 provides a snapshot of these findings.
+Our goal was to clean, organize, and analyze U.S. presidential election polling data to highlight voter preferences by state. We used **`knitr`** (@knitr) for report generation, ensuring our analysis was clear and well-documented, and **`kableExtra`** (@kableExtra) to enhance table outputs for easy interpretation. **`ggcorrplot`** (@ggcorrplot) helped us visualize correlations, revealing relationships between variables, while **`zoo`** (@zoo) efficiently handled time series data, such as shifts in voter preferences. The **`here`** (@here) package ensured consistent file paths, making our workflow reproducible. This streamlined approach provided a comprehensive, polished analysis of key trends and demographic distributions. @tbl-predictors-pct-summary-1 and @tbl-predictors-pct-summary-2 provide a snapshot of these findings, showcasing the results of our organized and thorough data analysis.
 
 ```{r}
 #| label: tbl-predictors-pct-summary-1
@@ -258,37 +258,54 @@ kable(
 ```
   
 ```{r}
-#| label: fig-party-extremes
-#| fig-cap: Demographic Differences Between California and South Dakota
+#| label: fig-selected-predictors
+#| fig-cap: Differences in Selected Predictors Between California and South Dakota
 #| echo: false
 #| warning: false
 #| message: false
 
-# Prepare the poll_summary data frame
-poll_summary <- poll_data %>%
-  mutate(party_diff = democrat_pct - republican_pct) %>%
-  select(-c(2, 3, 4, 6, 7, 8, 9, 11)) %>%  # Remove specific columns by index
-  select(-contains('Mode')) %>%             # Remove columns containing 'Mode' in their names
-  select(-contains('registration')) %>%
-  select(-democrat_pct, -republican_pct)    # Exclude 'democrat_pct' and 'republican_pct'
+# Update the predictor_columns to exclude gender
+predictor_columns <- c(
+  "What is the highest level of education you have attained? College graduate",
+  "What is the highest level of education you have attained? High school or less",
+  "For statistical purposes only, can you please tell me your ethnicity? White or Caucasian",
+  "For statistical purposes only, can you please tell me your ethnicity? Hispanic or Latino of any race",
+  "Who did you vote for in the 2020 election? Donald Trump",
+  "Who did you vote for in the 2020 election? Joe Biden",
+  "Although you are undecided, which candidate do you lean toward? Donald Trump",
+  "Although you are undecided, which candidate do you lean toward? Kamala Harris"
+)
 
-# Function to compute mean differences for all numeric variables
+# Update the short_labels to exclude gender
+short_labels <- c(
+  "College Graduate",
+  "High School or Less",
+  "White or Caucasian",
+  "Hispanic or Latino",
+  "Voted Trump 2020",
+  "Voted Biden 2020",
+  "Leaning Trump",
+  "Leaning Harris"
+)
+
+# Prepare the poll_summary data frame with specific predictors
+poll_summary <- poll_data %>%
+  select(state, all_of(predictor_columns))
+
+# Function to compute mean differences for selected predictors
 compute_mean_differences <- function(data, blue_state, red_state) {
-  numeric_vars <- data %>%
-    select(-state, -party_diff) %>%
-    select(where(is.numeric)) %>%
-    names()
+  selected_vars <- predictor_columns
   
   blue_means <- data %>%
     filter(state == blue_state) %>%
-    summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
+    summarise(across(all_of(selected_vars), mean, na.rm = TRUE))
   
   red_means <- data %>%
     filter(state == red_state) %>%
-    summarise(across(all_of(numeric_vars), mean, na.rm = TRUE))
+    summarise(across(all_of(selected_vars), mean, na.rm = TRUE))
   
   diff_df <- tibble(
-    Variable = numeric_vars,
+    Variable = short_labels,  # Use shortened labels
     Blue_Mean = as.numeric(blue_means[1, ]),
     Red_Mean = as.numeric(red_means[1, ]),
     Abs_Difference = abs(Blue_Mean - Red_Mean)
@@ -299,18 +316,16 @@ compute_mean_differences <- function(data, blue_state, red_state) {
 }
 
 # Function to prepare data for plotting
-prepare_plot_data <- function(diff_df, top_n = 6) {
-  top_diff_vars <- diff_df %>%
-    arrange(desc(Abs_Difference)) %>%
-    slice(1:top_n)
-  
-  top_diff_vars %>%
+prepare_plot_data <- function(diff_df) {
+  plot_data <- diff_df %>%
     pivot_longer(
       cols = c("Blue_Mean", "Red_Mean"), 
       names_to = "Group", 
       values_to = "Mean"
     ) %>%
     mutate(Group = recode(Group, "Blue_Mean" = "California", "Red_Mean" = "South Dakota"))
+  
+  plot_data
 }
 
 # Function to create the comparison plot
@@ -327,45 +342,41 @@ create_comparison_plot <- function(plot_data) {
       vjust = -0.3, 
       size = 3
     ) +
-    # Update the colors and labels for the groups
+    # Customize the colors and labels for the groups
     scale_fill_manual(values = c("California" = "blue", "South Dakota" = "red")) +
     labs(
-      title = "Demographic Differences Between California and South Dakota",
-      x = "Demographic Variable",
+      title = "Differences in Selected Predictors Between California and South Dakota",
+      x = "Predictor Variable",
       y = "Mean Percentage",
       fill = "State"
     ) +
     scale_y_continuous(limits = c(0, 100)) +
     theme_minimal() +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 4)
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10)
     )
 }
 
 # Main analysis function
-analyze_state_differences <- function(data, blue_state, red_state, top_n_vars = 5) {
+analyze_selected_predictors <- function(data, blue_state, red_state) {
   diff_df <- compute_mean_differences(data, blue_state, red_state)
   
-  plot_data <- prepare_plot_data(diff_df, top_n = top_n_vars)
+  plot_data <- prepare_plot_data(diff_df)
   
   plot <- create_comparison_plot(plot_data)
   
   list(
     plot = plot,
-    top_variables = diff_df %>% arrange(desc(Abs_Difference)) %>% slice(1:top_n_vars)
+    differences = diff_df
   )
 }
 
-# Ensure 'state' column exists in poll_summary
-if (!"state" %in% colnames(poll_summary)) {
-  stop("The 'state' column does not exist in poll_summary.")
-}
-
 # Run the analysis for California and South Dakota
-analysis_results <- analyze_state_differences(poll_summary, blue_state = "California", red_state = "South Dakota", top_n_vars = 6)
+analysis_results <- analyze_selected_predictors(poll_summary, blue_state = "California", red_state = "South Dakota")
 
 # Display the plot
 analysis_results$plot
+
 ```
 Beyond identifying swing states, it's also important to understand the differences between the strongest Democratic ("blue") and Republican ("red") states. The bar graph in @fig-party-extremes highlights these differences. It focuses on key factors that create the biggest contrasts between Democratic-leaning and Republican-leaning states, helping to show how these factors differ between the most extreme red and blue states. 
 
@@ -465,65 +476,7 @@ ggcorrplot(cor_matrix,
 
 
 ```
-  
-```{r}
-#| label: fig-predictors-party-pct-2
-#| fig-cap: Example Voting and Leaning Predictor Variable Visualization
-#| echo: false
-#| warning: false
-#| message: false
-
-# Calculate poll_summary_2 with rounding to the nearest tenth
-poll_summary_2 <- poll_data %>%
-  group_by(state) %>%
-  summarise(
-    dem_total_pct = round(sum(.data[[column_refs$democrat]], na.rm = TRUE), 1),
-    rep_total_pct = round(sum(.data[[column_refs$republican]], na.rm = TRUE), 1),
-    vote_trump_pct = round(mean(.data[[column_refs$vote_trump]], na.rm = TRUE), 1),
-    vote_biden_pct = round(mean(.data[[column_refs$vote_biden]], na.rm = TRUE), 1),
-    lean_trump_pct = round(mean(.data[[column_refs$lean_trump]], na.rm = TRUE), 1),
-    lean_kamala_pct = round(mean(.data[[column_refs$lean_Kamala]], na.rm = TRUE), 1)
-  ) %>%
-  mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
-  drop_na()
-
-# Select relevant numeric columns for correlation matrix, excluding PartyDifference
-corr_data_2 <- poll_summary_2 %>%
-  select(
-    Democrat = dem_total_pct,
-    Republican = rep_total_pct,
-    VotedTrump2020 = vote_trump_pct,
-    VotedBiden2020 = vote_biden_pct,
-    LeanTrump = lean_trump_pct,
-    LeanKamala = lean_kamala_pct
-  )
-
-# Calculate the correlation matrix
-cor_matrix_2 <- cor(corr_data_2, use = "complete.obs")
-
-# Set correlations less than -0.9 to NA
-cor_matrix_2[cor_matrix_2 < -0.9] <- NA
-
-# Visualize the correlation matrix without hierarchical clustering
-ggcorrplot(cor_matrix_2, 
-           hc.order = FALSE,  
-           type = "lower", 
-           lab = TRUE, 
-           lab_size = 2,  # Size for correlation labels
-           title = "Correlation Matrix of Voting Preferences and State Lean",
-           colors = c("blue", "white", "red"),  
-           legend.title = "Correlation") +
-  theme(
-    plot.title = element_text(size = 10, hjust = 0.5),  # Title size and centered
-    axis.text = element_text(size = 1),  # Axis text size
-    legend.text = element_text(size = 10),  # Legend text size
-    legend.title = element_text(size = 10),  # Legend title size
-    axis.title = element_text(size = 1)  # Axis labels size
-  )
-
-```   
-
-The correlation matrix in @fig-predictors-party-pct shows how different predictors relate to party preferences. We can see which factors, like education or gender, are more strongly tied to Democratic or Republican leanings. Blue shading indicates stronger Democratic support, while red shows stronger Republican support. Key observations include higher education being linked to Democratic support and lower education favoring Trump in 2020. Minority groups generally lean Democratic, while Caucasian/White voters tend to support Trump. Past voter behavior shows Biden supporters remain Democratic, and Trump supporters disapprove of Biden. Additionally, women lean slightly more Democratic compared to men, who often lean Republican.
+The correlation matrix in @fig-predictors-party-pct shows how different predictors relate to party preferences. We can see which factors, like education or gender, are more strongly tied to Democratic or Republican leanings. Blue shading indicates stronger Democratic support, while red shows stronger Republican support. Key observations include higher education being linked to Democratic support and lower education favoring Republican. Minority groups generally lean Democratic, while Caucasian/White voters tend to support Trump. Additionally, women lean slightly more Democratic compared to men, who often lean Republican.
 
 ```{r}
 #| label: fig-points-over-time
@@ -608,7 +561,7 @@ ggplot() +
 
 ```
 
-Lastly, we examine Democratic and Republican support alongside Biden's approval over time, marking July 21st when Joe Biden concluded his campaign, as reported by @globalnews2024. During this period, Democratic support was initially low but increased following this change. By analyzing specific demographic factors and previous voting behavior, we aim to predict the 2024 election outcome.
+Lastly, we examine Democratic and Republican support, along with the population's leanings toward Kamala Harris or Donald Trump over time, starting from July 21st, when Joe Biden concluded his campaign, as reported by @globalnews2024. During this period, Democratic support has been decreasing steadily since September. Trump lost some support in September but gained it back, surpassing Kamala by early October. As the election approaches, both Democrats and Republicans have similar levels of overall support; however, the differences between support for Trump and Harris remain significant. By analyzing specific demographic factors and previous voting behavior, we aim to predict the 2024 election outcome.  
 
 Key predictor variables:
 
@@ -616,7 +569,9 @@ Key predictor variables:
 - **Race/Ethnicity**: This examines how different racial and ethnic groups tend to align politically, with minority groups often leaning Democratic and White/Caucasian voters leaning Republican.
 - **Gender**: This captures how gender influences party preference, with women generally leaning more Democratic and men more Republican.
 - **Priors (Past Voting Behavior)**: This looks at who people voted for in the past, helping us understand ongoing political support or disapproval.
-- **Biden's Approval Rating**: This assesses how approval or disapproval of Joe Biden impacts Democratic support, providing insight into shifting voter sentiments.
+- **Population Leaning Towards Harris**: This assesses how the population is feeling at the moment regarding who they may vote for, providing insight into shifting voter sentiments.
+- **Population Leaning Towards Trump**: This assesses how the population is feeling at the moment regarding who they may vote for, providing insight into shifting voter sentiments.
+
 
 # Model {#sec-model}
 
@@ -626,7 +581,7 @@ Our model aims to forecast the voting outcome of the 2024 U.S. presidential elec
 
 ## Model Design and Approach
 
-We constructed two separate Bayesian generalized linear models to estimate the percentage likelihood of Trump and Harris winning in each swing state. Our models look at demographic and historical data that let us to generate probabilistic predictions for both candidates. These models provide insights into which candidate is more likely to secure a win, even in closely contested states.
+We constructed two separate Bayesian linear models to estimate the percentage likelihood of Trump and Harris winning in each swing state. Using **`brms`** (@brms) for Bayesian regression modeling, our models included demographic and historical data, allowing us to generate probabilistic predictions for both candidates. These models provide insights into which candidate is more likely to secure a win, even in closely contested states.
 
 ## Key Components of Our Models
 
@@ -644,12 +599,6 @@ We constructed two separate Bayesian generalized linear models to estimate the p
 ## Bayesian Modeling Implementation
 
 We implemented our models using the `brms` package in R, which allows for flexible Bayesian regression modeling. The models were fit with four chains, running 6,000 iterations each, to ensure convergence and reliable posterior estimates. Sensible default priors were adjusted to reflect our prior knowledge about voting behavior, and we conducted posterior predictive checks to assess the models' performance.
-
-## Results and Interpretation
-
-The results, summarized in Table @tbl-modelresults, highlight the predicted vote shares for each candidate in the swing states. For each state, we report the posterior mean, as well as 95% credible intervals, to capture the range of plausible outcomes. Our findings underscore the impact of demographic and historical factors on voting behavior, providing a nuanced understanding of which states are likely to be battlegrounds in the upcoming election.
-
-By using a Bayesian approach, we not only make point estimates but also quantify the uncertainty surrounding these predictions. This is crucial for election forecasting, where even small shifts in voter behavior can have significant implications. Our analysis will inform campaign strategies and identify states where mobilizing specific demographics could be pivotal.
 
 
 ```{r}
@@ -739,7 +688,9 @@ prediction_summary <- data.frame(
 
 # Results {#sec-results}
 
-Our results are summarized in @tbl-modelresults.
+The results, summarized in Table @tbl-modelresults, highlight the predicted vote shares for each candidate in the swing states. For each state, we report the posterior mean, as well as 95% credible intervals, to capture the range of plausible outcomes. Our findings underscore the impact of demographic and historical factors on voting behavior, providing a nuanced understanding of which states are likely to be battlegrounds in the upcoming election.
+
+By using a Bayesian approach, we not only make point estimates but also quantify the uncertainty surrounding these predictions. This is crucial for election forecasting, where even small shifts in voter behavior can have significant implications. Our analysis will inform campaign strategies and identify states where mobilizing specific demographics could be pivotal.
 
 ```{r}
 #| label: tbl-modelresults
@@ -953,8 +904,15 @@ Under 18
   - Undecided
   - Prefer not to say
 
-# Appendix {#sec-appendix-C}
-Include any technical details on data cleaning, model diagnostics, and posterior checks.
+# Appendix: Data Cleaning {#sec-appendix-C}
+The focus was cleaning up and organizing poll data from different states to create a clear and detailed timeline using data from Google Sheets and Excel files. To make this process easier and more efficient, we used several packages that helped us download, clean, and organize the information so it could be easily used later.
+
+First, we used the **`googledrive`** package (@googledrive), which allowed our code to connect to Google Sheets and download the poll data. This made it possible for us to get the most up-to-date information. Once we had the data, we used another set of packages called **`tidyverse`** (@tidyverse), which includes **`dplyr`** (@dplyr) and **`readr`** (@readr), to clean up the information and organize it. For data coming from Excel files, we used the **`readxl`** package (@readxl), which made it easy to read and work with the information from those files.
+
+We also used **`lubridate`** (@lubridate) to make sure dates were handled correctly, so the timeline made sense and everything was in order from oldest to newest.
+
+The **`janitor`** package (@janitor) was helpful for cleaning up column names. We also used **`testthat`** (@testthat) to test our data, making sure everything was correct and worked as expected. Finally, we used a package called **`arrow`** (@arrow) to save the data in a file format called Parquet, which makes the data smaller and faster to work with.
+
 
 # References
 
