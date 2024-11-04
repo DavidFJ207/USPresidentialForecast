@@ -8,7 +8,7 @@ author:
 thanks: "Code and data are available at: https://github.com/DavidFJ207/USPresidentialForecast"
 date: today
 date-format: long
-abstract: Our analysis of swing state polls for the 2024 U.S. Presidential Election shows a close race. Republicans lead in most key states like Michigan, Georgia, Nevada, Wisconsin, and Pennsylvania, while Democrats have a slight edge in Arizona. The national average also leans Republican, suggesting a Republican win in the 2024 Election.
+abstract: This paper analyzes recent swing state polling data to forecast outcomes for the 2024 U.S. Presidential Election. Our findings indicate a close race, with Republicans leading in key states such as Michigan, Georgia, Nevada, Wisconsin, and Pennsylvania, while Democrats hold a slight edge in Arizona. The national polling average also leans towards Republican, suggesting a Republican win in the 2024 Election. These insights give us a clearer picture of voter preferences across states and highlight the importance of targeted campaign strategies. 
 format: pdf
 number-sections: true
 bibliography: references.bib
