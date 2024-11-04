@@ -954,8 +954,9 @@ Under 18
   - Undecided
   - Prefer not to say
 
-# Additional data details
+# Appendix {#sec-appendix-C}
 Include any technical details on data cleaning, model diagnostics, and posterior checks.
+
 # References
 
 
