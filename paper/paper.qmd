@@ -29,18 +29,15 @@ library(brms)
 
 # Introduction
 
-*Overview paragraph:* The 2024 United States of America Presidential Election is to elect the fourty-seventh president of USA, with the two candidates as Donald Trump, the fourty-fifth president of the United States and representative of the Republican Party, and Kamala Harris, current vice president of the United States and representative of the Democratic Party, after Joe Biden announced that he will not continue participate in this presidential election anymore (@BidenQuits). Democracy can be described as liberal and left-leaning, with the emphasis of economy intervention with implementation of policies such as minimum wage and progressive tax rates. Members of the Republican party tend to follow the free economy, and can be described as right-leaning (@RepDem). The results of the 2024 Presidential Election will determine which political party, Republican or Democratic, will become the leader of the United States for the next four years, largely affecting the policies implemented in the United States during this time period. Due to the strong nation power of the United States, this may even affect the world's economic trends in the four years. Therefore, predicting results of the upcoming 2024 United States Presidential Election is a necessary action.
+The 2024 United States Presidential Election will determine the next president of the United States of America, with the outcome likely to affect both domestic and international policy and economic trends. Former President Donald Trump, the 45th president of the United States, is representing the Republican Party. In contrast, Vice President Kamala Harris is now the Democratic Party's candidate in the 2024 U.S. Presidential Election, following President Joe Biden's decision to withdraw from the race (@BidenQuits). Democracy can be described as liberal and left-leaning, with the emphasis on economy intervention with implementation of policies such as minimum wage and progressive tax rates. Members of the Republican party tend to follow the free economy, and can be described as right-leaning (@RepDem). 
 
-*Estimand paragraph:* To predict results of the 2024 United States of America Presidential Election, our aim is clearly to conclude which candidate, either Harris or Trump, is more likely to win this election. Our response variable is in turn the probability of one candidate winning the election based on poll data, with our chosen poll as Emerson. When the supporting percentage of one candidate, or the party s/he represents, is only slightly less than 50%, we cannot clearly determine whether s/he would be predicted to have been elected as the fourty-seventh US President or not, since there is a group of people who did not choose to participate in the voting process. Therefore, to increase accuracy of predictions, we will build two models, one model with the estimand as the probability of Harris, or the Democratic party, winning the election, and another with the estimand as the probability of Trump, or the Republican party, winning the election. By comparing the two predictions, one can get a final prediction of who is more likely to be elected as the next President of the United States of America.
+The outcome of the 2024 Presidential Election will determine whether the Republican or Democratic Party will lead the United States for the next four years. Given the United States' significant global influence, accurately predicting the results of this election carries substantial implications for shaping policy direction, ensuring economic stability, and influencing international relations. Reliable predictions enable parties to refine their campaigns and mobilize voters, influencing turnout and perceptions of competitiveness. Additionally, these predictions provide stakeholders with valuable insights that help adjust strategies and facilitate discussions on pressing societal issues. Ultimately, effective election forecasting is essential for understanding governance and its impact on society.
+
+This paper addresses a gap in election forecasting by using recent polling data from key swing states to provide a prediction of the 2024 election outcome. We aim to determine which candidate—Kamala Harris or Donald Trump—is more likely to win this election. Our response variable is in turn the probability of one candidate winning the election based on our chosen Emerson poll data. When one candidate’s support hovers just below 50%, it becomes challenging to predict their election as the 47th President of the United States, especially considering the potential influence of non-participating voters. To increase the accuracy of our predictions, we will develop two models: one estimating the probability of Harris, representing the Democratic Party, winning the election, and the other estimating the probability of Trump, representing the Republican Party, winning. By comparing these predictions, we aim to arrive at a clearer conclusion about who is more likely to be elected as the next President of the United States.
 
 *Results paragraph:* Summarize the key findings of the model, highlighting its predictive accuracy and implications.
 
-*Why it matters paragraph:* Explain the broader significance of accurately forecasting election results for politics, society, and policymaking.
-
-*Telegraphing paragraph:* 
-The remainder of this paper is structured as follows: Section 2 details the data and measurement process; Section 3 covers model development and results; Section 4 discusses implications and future steps.
-The remainder of this paper is structured as follows. @sec-data....
-
+The remainder of this paper is structured as follows: @sec-data details the data and measurement process; @sec-results covers model development and results; @sec-discussion discusses implications and future steps.
 
 # Data {#sec-data} 
 ## Overview 
@@ -755,7 +752,7 @@ kable(
 
 ```
 
-# Discussion
+# Discussion {#sec-discussion}
 
 ## First discussion point {#sec-first-point}
 
