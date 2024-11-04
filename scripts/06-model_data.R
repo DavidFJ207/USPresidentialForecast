@@ -56,14 +56,14 @@ model_data_dem <- analysis_data_dem %>%
 predictor_formula <- paste(predictor_columns, collapse = " + ")
 formula <- as.formula(paste("pct_scaled ~", predictor_formula))
 
-# Set priors with a specific prior for `Who did you vote for in the 2020 election? Joe Biden`
+# Adjusted priors for the Democrat Model
 priors_dem <- c(
   prior(normal(0, 5), class = "b"),
   prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Joe.Biden"),
-  prior(beta(1, 1), class = "phi")  # Prior for precision parameter
+  prior(gamma(2, 0.1), class = "phi")  # Use gamma prior for precision parameter
 )
 
-# Fit the Democrat Model
+# Fit the Democrat Model with updated control parameters
 dem_model <- brm(
   formula = formula,
   data = model_data_dem,
@@ -74,7 +74,7 @@ dem_model <- brm(
   warmup = 2000,
   cores = 4,
   seed = 123,
-  control = list(adapt_delta = 0.9, max_treedepth = 15)
+  control = list(adapt_delta = 0.9999, max_treedepth = 20)
 )
 
 ### Save the Democrat Model ###
@@ -105,14 +105,14 @@ model_data_rep <- analysis_data_rep %>%
 
 ### Specify and Fit the Republican Model ###
 
-# Set priors with a specific prior for `Who did you vote for in the 2020 election? Donald Trump`
+# Adjusted priors for the Republican Model
 priors_rep <- c(
   prior(normal(0, 5), class = "b"),
   prior(normal(0, 1), class = "b", coef = "Who.did.you.vote.for.in.the.2020.election..Donald.Trump"),
-  prior(beta(1, 1), class = "phi")  # Prior for precision parameter
+  prior(gamma(2, 0.1), class = "phi")  # Use gamma prior for precision parameter
 )
 
-# Fit the Republican Model
+# Fit the Republican Model with updated control parameters
 rep_model <- brm(
   formula = formula,
   data = model_data_rep,
@@ -123,7 +123,7 @@ rep_model <- brm(
   warmup = 2000,
   cores = 4,
   seed = 123,
-  control = list(adapt_delta = 0.9, max_treedepth = 15)
+  control = list(adapt_delta = 0.9999, max_treedepth = 20)
 )
 
 ### Save the Republican Model ###

@@ -364,12 +364,6 @@ updated_dataset <- cleaned_dataset %>%
 updated_dataset <- updated_dataset %>%
   select(state, starts_with("democrat"), starts_with("republican"), everything())
 
-updated_dataset <- updated_dataset %>%
-  mutate(across(-c(1:11), ~ if (is.character(.)) as.numeric(.) else .))
-
-updated_dataset <- updated_dataset_1 %>%
-  mutate(across(where(is.numeric), ~ round(., 1)))
-
 # Save dataset
 write_parquet(updated_dataset, "data/02-analysis_data/summarized_state_poll_data.parquet")
 
@@ -448,8 +442,5 @@ for (i in seq_len(nrow(state_data))) {
   # Append new_row as a row to timeline_data
   timeline_data <- rbind(timeline_data, as.data.frame(new_row, stringsAsFactors = FALSE, check.names = FALSE))
 }
-
-timeline_data <- timeline_data %>%
-  mutate(across(where(is.numeric), ~ round(., 1)))
 
 write_parquet(timeline_data, "data/02-analysis_data/timeline_data.parquet")

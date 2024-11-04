@@ -60,6 +60,12 @@ poll_data <- read_parquet(here::here(
 time_data <- read_parquet(here::here(
   "data/02-analysis_data/timeline_data.parquet"))
 
+poll_data <- poll_data %>%
+  mutate(across(12:ncol(.), ~ round(as.numeric(.), 1)))
+
+time_data <- time_data %>%
+  mutate(across(5:ncol(.), ~ round(as.numeric(.), 1)))
+
 ```
 
 Our primary objective was to clean, organize, and analyze U.S. presidential election polling data to provide insights into voter preferences by state. This involved selecting data from reputable pollsters, organizing it by state, and addressing any missing or incomplete entries. Additional datasets were merged where necessary, and after thoroughly addressing missing values, we finalized a polished dataset ready for analysis. Below is a table summarizing the polling data by state, showcasing voter preferences by party and demographic breakdowns. The table highlights key trends and differences across states in terms of party lean and demographic distribution. @fig-predictors-pct-summary-1 and @fig-predictors-pct-summary-2 provides a snapshot of these findings.
@@ -103,9 +109,7 @@ poll_summary <- poll_data %>%
     minority_pct = 100 - caucasian_pct,
     past_vote_biden = mean(`Who did you vote for in the 2020 election? Joe Biden`, na.rm = TRUE),
     past_vote_trump = mean(`Who did you vote for in the 2020 election? Donald Trump`, na.rm = TRUE)
-  ) %>%
-  mutate(across(everything(), ~ replace_na(., 0))) %>%  # Replace NA values with 0
-  mutate(across(where(is.numeric), ~ round(., 1)))  # Round to the nearest tenth
+  )
 
 # Rename columns for clarity
 colnames(poll_summary) <- c("State", "Democrat Pct", "Republican Pct", 
@@ -243,7 +247,7 @@ kable(
   
 ```{r}
 #| label: fig-party-extremes
-#| fig-cap: Demographic Differences Between Maryland and South Dakota
+#| fig-cap: Demographic Differences Between California and South Dakota
 #| echo: false
 #| warning: false
 #| message: false
@@ -253,7 +257,8 @@ poll_summary <- poll_data %>%
   mutate(party_diff = democrat_pct - republican_pct) %>%
   select(-c(2, 3, 4, 6, 7, 8, 9, 11)) %>%  # Remove specific columns by index
   select(-contains('Mode')) %>%             # Remove columns containing 'Mode' in their names
-  select(-contains('registration'))
+  select(-contains('registration')) %>%
+  select(-democrat_pct, -republican_pct)    # Exclude 'democrat_pct' and 'republican_pct'
 
 # Function to compute mean differences for all numeric variables
 compute_mean_differences <- function(data, blue_state, red_state) {
@@ -293,7 +298,7 @@ prepare_plot_data <- function(diff_df, top_n = 6) {
       names_to = "Group", 
       values_to = "Mean"
     ) %>%
-    mutate(Group = recode(Group, "Blue_Mean" = "Maryland", "Red_Mean" = "South Dakota"))
+    mutate(Group = recode(Group, "Blue_Mean" = "California", "Red_Mean" = "South Dakota"))
 }
 
 # Function to create the comparison plot
@@ -311,9 +316,9 @@ create_comparison_plot <- function(plot_data) {
       size = 3
     ) +
     # Update the colors and labels for the groups
-    scale_fill_manual(values = c("Maryland" = "blue", "South Dakota" = "red")) +
+    scale_fill_manual(values = c("California" = "blue", "South Dakota" = "red")) +
     labs(
-      title = "Demographic Differences Between Maryland and South Dakota",
+      title = "Demographic Differences Between California and South Dakota",
       x = "Demographic Variable",
       y = "Mean Percentage",
       fill = "State"
@@ -326,7 +331,7 @@ create_comparison_plot <- function(plot_data) {
 }
 
 # Main analysis function
-analyze_state_differences <- function(data, blue_state, red_state, top_n_vars = 4) {
+analyze_state_differences <- function(data, blue_state, red_state, top_n_vars = 5) {
   diff_df <- compute_mean_differences(data, blue_state, red_state)
   
   plot_data <- prepare_plot_data(diff_df, top_n = top_n_vars)
@@ -344,14 +349,11 @@ if (!"state" %in% colnames(poll_summary)) {
   stop("The 'state' column does not exist in poll_summary.")
 }
 
-# Run the analysis for Maryland and South Dakota
-analysis_results <- analyze_state_differences(poll_summary, blue_state = "Maryland", red_state = "South Dakota", top_n_vars = 5)
+# Run the analysis for California and South Dakota
+analysis_results <- analyze_state_differences(poll_summary, blue_state = "California", red_state = "South Dakota", top_n_vars = 6)
 
 # Display the plot
 analysis_results$plot
-
-
-
 ```
 Beyond identifying swing states, it's also important to understand the differences between the strongest Democratic ("blue") and Republican ("red") states. The bar graph in @fig-party-extremes highlights these differences. It focuses on key factors that create the biggest contrasts between Democratic-leaning and Republican-leaning states, helping to show how these factors differ between the most extreme red and blue states. 
 
@@ -407,15 +409,13 @@ poll_summary <- poll_data %>%
     lower_educated_pct = round(mean(.data[[column_refs$lower_educated]], na.rm = TRUE), 1),
     female_pct = round(mean(.data[[column_refs$female]], na.rm = TRUE), 1),
     male_pct = round(mean(.data[[column_refs$male]], na.rm = TRUE), 1),
-    lean_trump_pct = round(mean(.data[[column_refs$lean_trump]], na.rm = TRUE), 1),
-    lean_kamala_pct = round(mean(.data[[column_refs$lean_Kamala]], na.rm = TRUE), 1),
     caucasian_pct = round(mean(.data[[column_refs$caucasian]], na.rm = TRUE), 1),
     minority_pct = round(100 - caucasian_pct, 1)
   ) %>%
   mutate(party_diff = round(dem_total_pct - rep_total_pct, 1)) %>%
   drop_na()
 
-# Select relevant numeric columns for correlation matrix, excluding PartyDifference
+# Select relevant numeric columns for correlation matrix, excluding lean_trump and lean_kamala
 corr_data <- poll_summary %>%
   select(
     Democrat = dem_total_pct,
@@ -424,8 +424,6 @@ corr_data <- poll_summary %>%
     LowerEducated = lower_educated_pct,
     Female = female_pct,
     Male = male_pct,
-    LeanTrump = lean_trump_pct,
-    LeanKamala = lean_kamala_pct,
     Caucasian = caucasian_pct,
     Minority = minority_pct
   )
@@ -452,6 +450,7 @@ ggcorrplot(cor_matrix,
     legend.title = element_text(size = 10),  # Legend title size
     axis.title = element_text(size = 1)  # Axis labels size
   )
+
 
 ```
   
@@ -503,7 +502,7 @@ ggcorrplot(cor_matrix_2,
            colors = c("blue", "white", "red"),  
            legend.title = "Correlation") +
   theme(
-    plot.title = element_text(size = 12, hjust = 0.5),  # Title size and centered
+    plot.title = element_text(size = 10, hjust = 0.5),  # Title size and centered
     axis.text = element_text(size = 1),  # Axis text size
     legend.text = element_text(size = 10),  # Legend text size
     legend.title = element_text(size = 10),  # Legend title size
@@ -608,34 +607,33 @@ Key predictor variables:
 - **Biden's Approval Rating**: This assesses how approval or disapproval of Joe Biden impacts Democratic support, providing insight into shifting voter sentiments.
 
 # Model {#sec-model}
-## Model Development
 
-### Forecasting Vote Outcomes in Key Swing States
+## Forecasting Vote Outcomes in Key Swing States
 
 Our model aims to forecast the voting outcome of the 2024 U.S. presidential election, focusing specifically on eight pivotal swing states. We carefully selected predictor variables based on a correlation matrix we generated previously (see Figure @fig-predictors-party-pct).
 
-### Model Design and Approach
+## Model Design and Approach
 
 We constructed two separate Bayesian generalized linear models to estimate the percentage likelihood of Trump and Harris winning in each swing state. Our models look at demographic and historical data that let us to generate probabilistic predictions for both candidates. These models provide insights into which candidate is more likely to secure a win, even in closely contested states.
 
-### Key Components of Our Models
+## Key Components of Our Models
 
 - **Outcome Variables**: The percentage of the popular vote each candidate is expected to receive.
 - **Predictor Variables**: We include factors such as education level (e.g., college graduate vs. high school or less), gender distribution (male vs. female), and ethnic demographics (White or Caucasian vs. Hispanic or Latino). Additionally, historical voting patterns (e.g., 2020 voting preferences) and current leanings toward Trump or Harris are crucial predictors.
 - **Model Structure**: Each model incorporates an intercept to represent baseline support and predictor coefficients to quantify the effect of each variable on the vote share. We use a Beta distribution to account for the bounded nature of percentage outcomes, ensuring our predictions remain between 0 and 100%.
 
-### Assumptions Underlying Our Models
+## Assumptions Underlying Our Models
 
 1. **Linearity**: The relationship between each predictor and vote share is assumed to be approximately linear.
 2. **Independence**: We assume that vote share predictions for each state are independent, conditional on the included predictors.
 3. **Non-Normality**: Given the non-normal distribution of our response variables, using a generalized linear model is more appropriate. Our analysis revealed that the distribution of Democratic support resembles a Poisson-like distribution, while Republican support shows multimodal characteristics.
 4. **Priors**: We applied weakly informative priors to regularize our predictions, with specific priors for those who voted for Trump and Biden in 2020, aligning with historical voting trends.
 
-### Bayesian Modeling Implementation
+## Bayesian Modeling Implementation
 
 We implemented our models using the `brms` package in R, which allows for flexible Bayesian regression modeling. The models were fit with four chains, running 6,000 iterations each, to ensure convergence and reliable posterior estimates. Sensible default priors were adjusted to reflect our prior knowledge about voting behavior, and we conducted posterior predictive checks to assess the models' performance.
 
-### Results and Interpretation
+## Results and Interpretation
 
 The results, summarized in Table @tbl-modelresults, highlight the predicted vote shares for each candidate in the swing states. For each state, we report the posterior mean, as well as 95% credible intervals, to capture the range of plausible outcomes. Our findings underscore the impact of demographic and historical factors on voting behavior, providing a nuanced understanding of which states are likely to be battlegrounds in the upcoming election.
 
@@ -694,38 +692,37 @@ bayesian_model_dem <- readRDS(here::here("models/bayesian_model_dem.rds"))
 bayesian_model_rep <- readRDS(here::here("models/bayesian_model_rep.rds"))
 
 # Generate predictions for Democratic and Republican models
-#predictions_dem <- posterior_predict(bayesian_model_dem, newdata = swing_data)
-#predictions_rep <- posterior_predict(bayesian_model_rep, newdata = swing_data)
+predictions_dem <- posterior_predict(bayesian_model_dem, newdata = swing_data)
+predictions_rep <- posterior_predict(bayesian_model_rep, newdata = swing_data)
 
 # Function to summarize predictions by state
-#aggregate_summary <- function(predictions, state_labels) {
-  #summary_df <- data.frame(State = character(), mean = numeric(), lower = numeric(), upper = numeric())
-  #for (state in unique(state_labels)) {
-    #state_indices <- which(state_labels == state)
-    #state_predictions <- predictions[, state_indices]
-    #state_mean <- mean(state_predictions)
-    #state_lower <- quantile(state_predictions, 0.025)
-    #state_upper <- quantile(state_predictions, 0.975)
-    #summary_df <- rbind(summary_df, data.frame(State = state, mean = state_mean, lower = state_lower, upper = state_upper))
-  #}
-  #return(summary_df)
-#}
+aggregate_summary <- function(predictions, state_labels) {
+  summary_df <- data.frame(State = character(), mean = numeric(), lower = numeric(), upper = numeric())
+  for (state in unique(state_labels)) {
+    state_indices <- which(state_labels == state)
+    state_predictions <- predictions[, state_indices]
+    state_mean <- mean(state_predictions)
+    state_lower <- quantile(state_predictions, 0.025)
+    state_upper <- quantile(state_predictions, 0.975)
+    summary_df <- rbind(summary_df, data.frame(State = state, mean = state_mean, lower = state_lower, upper = state_upper))
+  }
+  return(summary_df)
+}
 
 # Summarize predictions for both Democrat and Republican models
-#dem_summary <- aggregate_summary(predictions_dem, swing_data$State)
-#rep_summary <- aggregate_summary(predictions_rep, swing_data$State)
+dem_summary <- aggregate_summary(predictions_dem, swing_data$State)
+rep_summary <- aggregate_summary(predictions_rep, swing_data$State)
 
 # Combine summaries into the final prediction summary
-#prediction_summary <- data.frame(
-  #State = dem_summary$State,
-  #DEM_Mean = dem_summary$mean,
-  #DEM_Lower = dem_summary$lower,
-  #DEM_Upper = dem_summary$upper,
-  #REP_Mean = rep_summary$mean,
-  #REP_Lower = rep_summary$lower,
-  #REP_Upper = rep_summary$upper
-#)
-
+prediction_summary <- data.frame(
+  State = dem_summary$State,
+  DEM_Mean = dem_summary$mean,
+  DEM_Lower = dem_summary$lower,
+  DEM_Upper = dem_summary$upper,
+  REP_Mean = rep_summary$mean,
+  REP_Lower = rep_summary$lower,
+  REP_Upper = rep_summary$upper
+)
 ```
 
 # Results {#sec-results}
@@ -740,23 +737,24 @@ Our results are summarized in @tbl-modelresults.
 #| message: false
 
 # Modify the prediction summary
-#prediction_summary <- prediction_summary %>%
-  #select(State, DEM_Mean, REP_Mean) %>%  # Keep only the mean columns
-  #mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))
+prediction_summary <- prediction_summary %>%
+  select(State, DEM_Mean, REP_Mean) %>%  # Keep only the mean columns
+  mutate(Winner = ifelse(DEM_Mean > REP_Mean, "Democrat", "Republican"))
 
 # Create a formatted table
-#kable(
-  #prediction_summary,
-  #col.names = c("State", "Democrat Points", "Republican Points", "Winner"),
-  #format = "latex", 
-  #digits = 2,
-  #escape = FALSE
-#) %>%
-  #kable_styling(
-    #latex_options = c("striped", "hold_position", "condensed"), 
-    #full_width = FALSE, 
-    #font_size = 10
-#)
+kable(
+  prediction_summary,
+  col.names = c("State", "Democrat Points", "Republican Points", "Winner"),
+  format = "latex", 
+  digits = 2,
+  escape = FALSE
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "condensed"), 
+    full_width = FALSE, 
+    font_size = 10
+  )
+
 
 ```
 
@@ -944,56 +942,8 @@ Under 18
   - Undecided
   - Prefer not to say
 
-
-## Additional Data & Model Details
-Include any technical details on data cleaning, model diagnostics, and posterior checks.
-
-
-
 # Additional data details
-
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-```
-
-## Diagnostics
-
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-```
-
-
-\newpage
-
-
+Include any technical details on data cleaning, model diagnostics, and posterior checks.
 # References
 
 
