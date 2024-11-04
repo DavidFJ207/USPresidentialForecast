@@ -587,18 +587,18 @@ We constructed two separate Bayesian linear models to estimate the percentage li
 
 - **Outcome Variables**: The percentage of the popular vote each candidate is expected to receive.
 - **Predictor Variables**: We include factors such as education level (e.g., college graduate vs. high school or less), gender distribution (male vs. female), and ethnic demographics (White or Caucasian vs. Hispanic or Latino). Additionally, historical voting patterns (e.g., 2020 voting preferences) and current leanings toward Trump or Harris are crucial predictors.
-- **Model Structure**: Each model incorporates an intercept to represent baseline support and predictor coefficients to quantify the effect of each variable on the vote share. We use a Beta distribution to account for the bounded nature of percentage outcomes, ensuring our predictions remain between 0 and 100%.
+- **Model Structure**: Each model incorporates an intercept to represent baseline support and predictor coefficients to quantify the effect of each variable on the vote share.
 
 ## Assumptions Underlying Our Models
 
 1. **Linearity**: The relationship between each predictor and vote share is assumed to be approximately linear.
 2. **Independence**: We assume that vote share predictions for each state are independent, conditional on the included predictors.
-3. **Non-Normality**: Given the non-normal distribution of our response variables, using a generalized linear model is more appropriate. Our analysis revealed that the distribution of Democratic support resembles a Poisson-like distribution, while Republican support shows multimodal characteristics.
+3. **Non-Normality**: Given the non-normal distribution of our response variables, using a generalized linear model is more appropriate.
 4. **Priors**: We applied weakly informative priors to regularize our predictions, with specific priors for those who voted for Trump and Biden in 2020, aligning with historical voting trends.
 
 ## Bayesian Modeling Implementation
 
-We implemented our models using the `brms` package in R, which allows for flexible Bayesian regression modeling. The models were fit with four chains, running 6,000 iterations each, to ensure convergence and reliable posterior estimates. Sensible default priors were adjusted to reflect our prior knowledge about voting behavior, and we conducted posterior predictive checks to assess the models' performance.
+The models were fit with four chains, running 6,000 iterations each, to ensure convergence and reliable posterior estimates. Sensible default priors were adjusted to reflect our prior knowledge about voting behavior, and we conducted posterior predictive checks to assess the models' performance.
 
 
 ```{r}
@@ -688,9 +688,9 @@ prediction_summary <- data.frame(
 
 # Results {#sec-results}
 
-The results, summarized in Table @tbl-modelresults, highlight the predicted vote shares for each candidate in the swing states. For each state, we report the posterior mean, as well as 95% credible intervals, to capture the range of plausible outcomes. Our findings underscore the impact of demographic and historical factors on voting behavior, providing a nuanced understanding of which states are likely to be battlegrounds in the upcoming election.
+The results, summarized in Table @tbl-modelresults, show the predicted vote shares for each candidate in the swing states. Our findings show the impact of demographic and historical factors on voting behavior.
 
-By using a Bayesian approach, we not only make point estimates but also quantify the uncertainty surrounding these predictions. This is crucial for election forecasting, where even small shifts in voter behavior can have significant implications. Our analysis will inform campaign strategies and identify states where mobilizing specific demographics could be pivotal.
+By using a Bayesian approach, we not only make point estimates but also quantify the uncertainty surrounding these predictions. This is crucial for election forecasting, where even small shifts in voter behavior can have significant implications.
 
 ```{r}
 #| label: tbl-modelresults
