@@ -772,23 +772,23 @@ kable(
 
 # Discussion {#sec-discussion}
 
-## First discussion point {#sec-first-point}
+## Predictive Insights and Electoral Dynamics
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+Our model provides insightful predictions on the 2024 U.S. presidential election landscape, highlighting both the strengths and potential uncertainties within the swing states. By examining the demographic and historical predictors, we observed significant patterns in voter leanings and demographic shifts, particularly in critical swing states such as Georgia, Michigan, and Pennsylvania. The model suggests that minor shifts in demographics or campaign focus within these states could lead to substantial impacts on the election outcome. For example, Georgia, which exhibits an almost even split in party leanings, underscores the importance of targeted outreach to specific demographics, like college-educated voters and minority groups, which show slight inclinations towards the Democratic party.
 
-## Second discussion point
+## The Role of Demographic Factors in Predicting Party Support
 
-Please don't use these as sub-heading labels - change them to be what your point actually is.
+The analysis confirms that demographic variables such as education level, ethnicity, and gender hold substantial predictive value in determining party affiliation and voter preference. Our correlation matrix shows that higher education levels, for instance, are more closely associated with Democratic leanings, whereas lower education levels trend towards Republican support. Racial demographics also show a clear pattern, with minority groups leaning Democratic and White/Caucasian groups displaying stronger support for Republican candidates. Additionally, our results on gender differences show a modest trend, with women generally favoring Democratic candidates and men leaning Republican. This dynamic reinforces the importance of gender-specific appeals and messaging in campaign strategies. The model's findings imply that campaigns aiming to shift voter sentiment in swing states may benefit from tailored approaches that address the priorities and concerns specific to these demographic groups.
 
-## Third discussion point
+## Weaknesses and Next Steps
 
-Discuss what the model reveals about the election forecast and its potential impact on understanding voting behavior.
+While the model provides useful forecasts, there are inherent limitations and biases that may affect its predictions. One limitation is the assumption of linearity between predictor variables and vote share, which may not fully capture the complex dynamics of voter preferences in certain regions. Furthermore, the model’s independence assumption may overlook interconnected factors among states or demographic groups, particularly as social and economic trends impact neighboring states in similar ways.
 
-*Person C*: Discuss limitations of the model and areas for further improvement.
+The use of historical voting data can also introduce potential biases, especially as the political landscape can shift unexpectedly due to national events or changing candidate appeal. The reliance on only Emerson polling data may also introduce biases from potential underrepresentation or overrepresentation of certain demographic groups. Future models should try to incorporate multiple polling sources and adjust for potential sampling biases across states.
 
-## Weaknesses and next steps
+Moving forward, enhancements could include non-linear models to capture more complex relationships between demographic variables and voter behavior. Additionally, incorporating data on emerging voter concerns, such as economic shifts and social issues, would allow the model to better adapt to the evolving political landscape. Expanding the dataset to include more recent and varied polling sources may help improve prediction accuracy.
 
-Weaknesses and next steps should also be included.
+Moreover, applying regularization techniques, such as LASSO or Ridge regression, might reduce overfitting and improve the generalizability of predictions across states. Incorporating voter sentiment analysis from social media or news coverage could provide real-time insights into voter sentiment, enabling the model to adapt to the ever-changing political dynamics. Lastly, building models that consider interactions among predictors, such as gender and education, could offer a more nuanced view of the factors influencing voter behavior, making predictions more responsive to shifts within pivotal swing states.
 
 \newpage
 
