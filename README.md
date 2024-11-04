@@ -1,9 +1,8 @@
-# Starter folder
+# Forecasting the 2024 US Presidential Election by Analyzing Demographic Patterns and Predicting Swing States
 
-## Overview
+## Abstract
 
-This repo provides students with a foundation for their own projects associated with *Telling Stories with Data*. You do not need every aspect for every paper and you should delete aspects that you do not need.
-
+This paper forecasts the 2024 U.S. presidential election by analyzing demographic, historical voting, and recent polling data. Using a combination of regression analysis, historical trend evaluation, and a Bayesian framework, our model assesses how demographic factors—such as race, education, and gender—shape voter preferences and party support. Our findings reveal a majority of key states and the national polling average leaning toward Republicans, suggesting Donald Trump is positioned to win the 2024 Election. These insights enhance our understanding of voter preferences across states and emphasize the significance of targeted campaign strategies.
 
 ## File Structure
 
