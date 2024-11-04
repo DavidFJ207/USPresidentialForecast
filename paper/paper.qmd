@@ -19,10 +19,7 @@ bibliography: references.bib
 #| warning: false
 #| message: false
 library(tidyverse)
-library(dplyr)
 library(knitr)
-library(lubridate)
-library(ggplot2)
 library(ggcorrplot)
 library(kableExtra)
 library(arrow)
